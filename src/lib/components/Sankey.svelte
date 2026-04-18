@@ -317,7 +317,7 @@
   .sankey-wrap {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    width: 100%;
     gap: 4px;
   }
   .chart-header {
@@ -331,14 +331,13 @@
   .chart-subtitle { font-size: 10px; color: #bbb; line-height: 1.4; }
 
   .chart-body {
-    flex: 1;
-    min-height: 0;
+    width: 100%;
     position: relative;
   }
   .chart-body svg {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    display: block;
+    width: 100%;
+    height: auto;
   }
 
   .sankey-tip {

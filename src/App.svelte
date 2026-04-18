@@ -8,7 +8,6 @@
   import Controls from './lib/components/Controls.svelte';
   import Overlays from './lib/components/Overlays.svelte';
   import ReportView from './lib/components/ReportView.svelte';
-  import RulesInfo from './lib/components/RulesInfo.svelte';
   import Sankey from './lib/components/Sankey.svelte';
   import BudgetBar from './lib/components/BudgetBar.svelte';
 
@@ -30,8 +29,8 @@
       .toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
   }
 
-  const LEFT_LEVERS  = ['filing_status','wages_income','investment_income','short_term_capital_gains','capital_gains','ira_contribution','has_workplace_plan','age','over_65','num_children','state','nyc_resident'];
-  const RIGHT_LEVERS = ['state_local_tax','mortgage_interest','charitable_contributions','iso_options_exercised','has_amt_preference_items','federal_withheld','state_withheld'];
+  const LEFT_LEVERS  = ['filing_status','wages_income','investment_income','short_term_capital_gains','capital_gains','age','over_65','state','nyc_resident'];
+  const RIGHT_LEVERS = ['ira_contribution','has_workplace_plan','num_children','state_local_tax','mortgage_interest','charitable_contributions','iso_options_exercised','has_amt_preference_items','federal_withheld','state_withheld'];
 
   const CARD_HELP = {
     totalTax: 'Sum of federal income tax (including capital gains tax and credits), NIIT surtax, and state/local taxes. Does not include FICA/payroll taxes.',
@@ -111,8 +110,7 @@
         <aside class="sidebar sidebar-left">
           <div class="sidebar-header">
             <div class="title-row">
-              <h1 class="app-title">Tax Optimizer</h1>
-              <RulesInfo meta={rules.meta} />
+              <h1 class="app-title">TAX TALAIVAA</h1>
             </div>
             <div class="config-row">
               <label for="config-select" class="config-label">Tax Year</label>
@@ -143,7 +141,7 @@
             <span class="disclaimer-icon">⚠</span>
             Estimates only — not official tax advice. No data is stored; all inputs are lost when you leave this page.
           </div>
-          <p class="sidebar-section-label">Income &amp; Personal</p>
+          <p class="sidebar-section-label">INCOME</p>
           <Controls levers={rules.levers.filter(l => LEFT_LEVERS.includes(l.id))} {scenario} />
         </aside>
 
@@ -249,7 +247,7 @@
 
         <!-- RIGHT: Deductions & Withholding -->
         <aside class="sidebar sidebar-right">
-          <p class="sidebar-section-label">Deductions &amp; Withholding</p>
+          <p class="sidebar-section-label">DEDUCTIONS</p>
           <Controls levers={rules.levers.filter(l => RIGHT_LEVERS.includes(l.id))} {scenario} />
         </aside>
 
@@ -446,14 +444,9 @@
     flex-shrink: 0;
   }
 
-  /* Sankey fills remaining space; allow vertical scroll if SVG is taller than available */
   .sankey-area {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: #e5e7eb transparent;
+    flex: none;
+    overflow: visible;
   }
 
   /* Budget bar — fixed height at bottom */
@@ -521,6 +514,6 @@
     .sidebar-right { border-left: none; border-top: 1px solid #e5e7eb; }
     .dashboard { height: auto; overflow: visible; }
     .stats-strip { flex-wrap: wrap; }
-    .sankey-area { flex: none; height: 400px; }
+    .sankey-area { flex: none; }
   }
 </style>

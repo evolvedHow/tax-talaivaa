@@ -53,7 +53,7 @@
           on:mouseover={(e) => onOver(e, s)}
           on:mousemove={onMove}
           on:mouseout={onOut}
-        ></div>
+        >{#if s.pct >= 0.06}<span class="seg-label">{(s.pct * 100).toFixed(0)}%</span>{/if}</div>
       {/each}
     </div>
 
@@ -97,7 +97,21 @@
     width: 100%;
     cursor: pointer;
   }
-  .seg { height: 100%; transition: opacity 0.15s; }
+  .seg {
+    height: 100%;
+    transition: opacity 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .seg-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+    pointer-events: none;
+    white-space: nowrap;
+  }
 
   .tip {
     position: absolute;
