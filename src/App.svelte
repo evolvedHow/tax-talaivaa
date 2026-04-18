@@ -57,7 +57,7 @@
     rulesError.set(null);
     rulesStore.set(null);
     try {
-      const resp = await fetch(`/tax-configs/${configId}.yml`);
+      const resp = await fetch(`${import.meta.env.BASE_URL}tax-configs/${configId}.yml`);
       if (!resp.ok) throw new Error(`Failed to load ${configId}.yml: HTTP ${resp.status}`);
       const text = await resp.text();
       const rules = validateRules(yaml.load(text));
