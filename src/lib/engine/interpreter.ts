@@ -246,11 +246,11 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
       stateTax = applyBrackets(taxableIncome, sb).total;
     }
 
-    // Sub-jurisdictions
+    // Sub-jurisdictions — matched by key against scenario.sub_jurisdiction
     if (stateRules.sub_jurisdictions) {
-      for (const [, subJuris] of Object.entries(stateRules.sub_jurisdictions)) {
-        const triggerVal = scenario[subJuris.trigger_lever];
-        if (triggerVal === true || triggerVal === 'true' || triggerVal === 1) {
+      const selectedSub = (scenario['sub_jurisdiction'] as string) ?? 'none';
+      for (const [key, subJuris] of Object.entries(stateRules.sub_jurisdictions)) {
+        if (selectedSub === key) {
           const subBrackets = subJuris.brackets[fs] ?? subJuris.brackets['single'] ?? [];
           subJurisdictionTax += applyBrackets(taxableIncome, subBrackets).total;
         }

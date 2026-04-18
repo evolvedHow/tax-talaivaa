@@ -121,7 +121,7 @@ export interface Lever {
 // ─── States ───────────────────────────────────────────────────────────────────
 
 export interface SubJurisdiction {
-  trigger_lever: string;
+  trigger_lever?: string;
   brackets: ByFilingStatus<Bracket[]>;
 }
 

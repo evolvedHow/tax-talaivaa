@@ -3,7 +3,7 @@
   import yaml from 'js-yaml';
   import type { TaxRules } from './lib/types/taxRules';
   import { rulesStore, rulesError, rulesLoading } from './lib/stores/rules';
-  import { scenarioStore, initScenario } from './lib/stores/scenario';
+  import { scenarioStore, initScenario, updateLever } from './lib/stores/scenario';
   import { resultStore } from './lib/stores/result';
   import Controls from './lib/components/Controls.svelte';
   import Overlays from './lib/components/Overlays.svelte';
@@ -29,7 +29,7 @@
       .toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
   }
 
-  const LEFT_LEVERS  = ['filing_status','wages_income','investment_income','short_term_capital_gains','capital_gains','age','over_65','state','nyc_resident'];
+  const LEFT_LEVERS  = ['filing_status','wages_income','investment_income','short_term_capital_gains','capital_gains','age','over_65','state'];
   const RIGHT_LEVERS = ['ira_contribution','has_workplace_plan','num_children','state_local_tax','mortgage_interest','charitable_contributions','iso_options_exercised','has_amt_preference_items','federal_withheld','state_withheld'];
 
   const CARD_HELP = {
@@ -143,6 +143,20 @@
           </div>
           <p class="sidebar-section-label">INCOME</p>
           <Controls levers={rules.levers.filter(l => LEFT_LEVERS.includes(l.id))} {scenario} />
+          {#if rules.states[String(scenario.state ?? 'none')]?.sub_jurisdictions}
+            <div class="inline-lever">
+              <label class="inline-lever-label" for="sub-jurisdiction">Sub-Jurisdiction</label>
+              <select id="sub-jurisdiction"
+                value={String(scenario.sub_jurisdiction ?? 'none')}
+                on:change={(e) => updateLever('sub_jurisdiction', e.currentTarget.value)}
+              >
+                <option value="none">None</option>
+                {#each Object.keys(rules.states[String(scenario.state ?? 'none')]?.sub_jurisdictions ?? {}) as key}
+                  <option value={key}>{key}</option>
+                {/each}
+              </select>
+            </div>
+          {/if}
         </aside>
 
         <!-- CENTER: Dashboard -->
@@ -369,6 +383,28 @@
     color: #888;
     margin-bottom: 12px;
     margin-top: 0;
+  }
+
+  .inline-lever {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 12px;
+  }
+  .inline-lever-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #1A1A1A;
+  }
+  .inline-lever select {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    font-size: 12px;
+    font-family: inherit;
+    background: #fff;
+    cursor: pointer;
   }
 
   /* Center dashboard */

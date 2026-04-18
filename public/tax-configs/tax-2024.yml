@@ -334,16 +334,6 @@ levers:
       "none" for states with no income tax (FL, TX, WA, etc.). NYC residents
       should also enable the NYC toggle below for the city surcharge.
 
-  - id: nyc_resident
-    label: New York City Resident
-    type: toggle
-    default: false
-    help: >
-      NYC residents pay an additional 3.078%–3.876% city income tax on top of
-      NY State tax, making NYC one of the highest combined tax jurisdictions in
-      the US (federal + state + city can exceed 50% at top incomes). Only
-      applies when State is set to NY.
-
   - id: iso_options_exercised
     label: Exercised ISO Stock Options (AMT trigger)
     type: toggle

@@ -320,14 +320,6 @@ levers:
       brackets (4%–8.82%); Georgia uses a flat 5.39% rate for 2025. Select
       "none" for states with no income tax (FL, TX, WA, etc.).
 
-  - id: nyc_resident
-    label: New York City Resident
-    type: toggle
-    default: false
-    help: >
-      NYC residents pay an additional 3.078%–3.876% city income tax on top of
-      NY State tax. Only applies when State is set to NY.
-
   - id: iso_options_exercised
     label: Exercised ISO Stock Options (AMT trigger)
     type: toggle
