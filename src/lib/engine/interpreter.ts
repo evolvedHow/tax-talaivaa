@@ -135,8 +135,12 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
     ? Math.min(charitableContribs, magi * charityCap)
     : charitableContribs;
 
-  const totalItemized = saltAmount + miAmount + charityAmount + iraDeduction;
-  const useItemized = totalItemized > standardDeduction;
+  // IRA is above-the-line: always reduces AGI regardless of standard vs itemized
+  const belowLineItemized = saltAmount + miAmount + charityAmount;
+  const useItemized = belowLineItemized > standardDeduction;
+  const belowLineDeduction = useItemized ? belowLineItemized : standardDeduction;
+  const deductionAmount = iraDeduction + belowLineDeduction;
+  const deductionType: 'standard' | 'itemized' = useItemized ? 'itemized' : 'standard';
 
   const deductionBreakdown: DeductionBreakdown = {
     salt: stateLocalTax,
@@ -144,11 +148,8 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
     mortgage_interest: miAmount,
     charity: charityAmount,
     ira: iraDeduction,
-    total_itemized: totalItemized,
+    total_itemized: belowLineItemized,
   };
-
-  const deductionAmount = useItemized ? totalItemized : standardDeduction;
-  const deductionType: 'standard' | 'itemized' = useItemized ? 'itemized' : 'standard';
 
   // ── Taxable Income ────────────────────────────────────────────────────────
   // Ordinary = wages + bonus + interest + STCG + business + rental (all taxed at regular brackets)

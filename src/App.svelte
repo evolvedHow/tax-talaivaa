@@ -146,6 +146,16 @@
                   </span>
                 </div>
               {/if}
+              {#if result.stateWithheld > 0}
+                {@const so = result.stateOwed}
+                <div class="hs-sep"></div>
+                <div class="hs">
+                  <span class="hs-lbl">State {so >= 0 ? 'Owed' : 'Refund'}</span>
+                  <span class="hs-val" class:hs-red={so > 0} class:hs-green={so < 0}>
+                    {so === 0 ? 'Even' : `$${Math.abs(Math.round(so)).toLocaleString()}`}
+                  </span>
+                </div>
+              {/if}
             {/if}
           </div>
           <div class="hdr-right">
