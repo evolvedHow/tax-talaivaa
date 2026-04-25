@@ -224,9 +224,10 @@
       {/each}
     </div>
 
-    <!-- ── Ribbon SVG — stretches to 100% width at fixed height ──────────── -->
+    <!-- ── Ribbon SVG — grows to fill available space ────────────────────── -->
+    <div class="ribbon-wrap">
     <svg viewBox="0 0 10000 100" preserveAspectRatio="none"
-         style="width:100%; height:56px; display:block; margin: -1px 0; overflow:visible">
+         style="width:100%; height:100%; display:block; overflow:visible">
       {#each ribbons as r}
         <!-- svelte-ignore a11y-no-static-element-interactions -->
         <path
@@ -242,6 +243,7 @@
         />
       {/each}
     </svg>
+    </div>
 
     <!-- ── Destination bar ────────────────────────────────────────────────── -->
     <div class="bar-row">
@@ -297,9 +299,13 @@
 </div>
 
 <style>
-  .flow-wrap { display: flex; flex-direction: column; width: 100%; gap: 0; position: relative; }
+  .flow-wrap {
+    display: flex; flex-direction: column; width: 100%; position: relative;
+    height: 100%; min-height: 0;
+  }
 
-  .flow-header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+  .flow-header { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+                 margin-bottom: 6px; flex-shrink: 0; }
   .flow-title  { font-size: 12px; font-weight: 600; color: #1A1A1A; }
   .flow-sub    { font-size: 10px; color: #bbb; }
 
@@ -308,6 +314,13 @@
     width: 100%;
     height: 52px;
     border-radius: 6px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .ribbon-wrap {
+    flex: 1;
+    min-height: 60px;
     overflow: hidden;
   }
 
@@ -352,7 +365,7 @@
 
   .summary-row {
     display: flex; align-items: center; gap: 6px;
-    flex-wrap: wrap; font-size: 11px; margin-top: 6px;
+    flex-wrap: wrap; font-size: 11px; margin-top: 6px; flex-shrink: 0;
   }
   .s-sep  { color: #bbb; }
   .s-item { font-weight: 600; }

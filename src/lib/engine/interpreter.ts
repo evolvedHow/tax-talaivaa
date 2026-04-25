@@ -96,7 +96,7 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
   const magi = grossIncome; // simplified: before IRA deduction
 
   // ── Standard Deduction + Senior Bonus ────────────────────────────────────
-  const isOver65 = Boolean(scenario['over_65'] ?? false);
+  const isOver65 = age >= 65;
   let standardDeduction = rules.federal.standard_deduction[fs] ?? 0;
 
   if (isOver65 && rules.federal.senior_bonus[fs]) {

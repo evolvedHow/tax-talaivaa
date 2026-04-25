@@ -292,18 +292,8 @@ levers:
     default: 40
     help: >
       Used to calculate IRA catch-up contribution eligibility ($1,000 extra
-      allowed at age 50+). Also used together with the "Over 65" toggle to
-      apply the senior standard deduction bonus.
-
-  - id: over_65
-    label: Age 65 or Older (senior bonus)
-    type: toggle
-    default: false
-    help: >
-      Taxpayers 65 or older receive an extra standard deduction on top of the
-      base amount. For 2024: $1,950 additional for single/HoH, $1,550 for
-      each qualifying spouse in MFJ. You must also toggle "Age" to 65+ for
-      the IRA catch-up limit to apply.
+      allowed at age 50+). If 65 or older, the senior standard deduction bonus
+      is applied automatically.
 
   - id: num_children
     label: Qualifying Children (Child Tax Credit)

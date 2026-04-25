@@ -18,7 +18,6 @@
 
   let selectedConfig = 'tax-2025';
   let showReport = false;
-  let userName = 'Vish';
 
   // ── Input panel section definitions (by tax treatment) ────────────────────
   // Ordinary: taxed at regular brackets
@@ -32,7 +31,7 @@
   // Itemized deductions (below-the-line, reduce AGI → taxable)
   const S_ITEMIZED     = ['state_local_tax','mortgage_interest','charitable_contributions'];
   // Credits & personal
-  const S_CREDITS      = ['num_children','age','over_65'];
+  const S_CREDITS      = ['num_children','age'];
   // Tax settings
   const S_SETTINGS     = ['filing_status','state','federal_withheld','state_withheld'];
 
@@ -114,17 +113,17 @@
                 {#each CONFIGS as c}<option value={c.id}>{c.label}</option>{/each}
               </select>
             </div>
-            <div class="hdr-field">
-              <label class="hdr-lbl" for="uname">Name</label>
-              <input id="uname" class="hdr-input" type="text" bind:value={userName}
-                     placeholder="Your name" maxlength="30" />
-            </div>
           </div>
           <div class="hdr-stats">
             {#if result}
               <div class="hs"><span class="hs-lbl">Gross</span><span class="hs-val">${Math.round(result.grossIncome).toLocaleString()}</span></div>
               <div class="hs-sep"></div>
               <div class="hs"><span class="hs-lbl">Total Tax</span><span class="hs-val hs-red">${Math.round(result.totalTax).toLocaleString()}</span></div>
+              <div class="hs-sep"></div>
+              <div class="hs">
+                <span class="hs-lbl">Tax Free Day</span>
+                <span class="hs-val">{taxFreedomDate(result.totalTax, result.grossIncome, rules.meta.tax_year)}</span>
+              </div>
               <div class="hs-sep"></div>
               <div class="hs"><span class="hs-lbl">Federal</span><span class="hs-val">${Math.round(result.federalTax).toLocaleString()}</span></div>
               {#if result.stateTax + result.subJurisdictionTax > 0}
@@ -164,23 +163,11 @@
               <div class="warnings-row"><Overlays warnings={result.warnings} /></div>
             {/if}
 
-            <div class="banner">
-              <span class="b-name">{userName || 'Hey'}</span>, your taxes are
-              <strong class="b-tax">${Math.round(result.totalTax).toLocaleString()}</strong>
-              — you worked until
-              <strong class="b-date">{taxFreedomDate(result.totalTax, result.grossIncome, rules.meta.tax_year)}</strong>
-              to pay them.
-              <span class="b-ded">
-                {result.deductionType === 'itemized' ? 'Itemized deductions' : 'Standard deduction'}:
-                ${Math.round(result.deductionAmount).toLocaleString()}
-              </span>
-            </div>
-
-            <div class="chart-card">
+            <div class="chart-card sankey-card">
               <Sankey {result} {scenario} />
             </div>
 
-            <div class="chart-card">
+            <div class="chart-card budget-card">
               <BudgetBar federalTax={result.federalTax} taxYear={rules.meta.tax_year} />
             </div>
           {:else}
@@ -306,14 +293,11 @@
   .hdr-field { display: flex; align-items: center; gap: 5px; }
   .hdr-lbl { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.7);
              text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
-  .hdr-select, .hdr-input {
+  .hdr-select {
     padding: 3px 7px; border: 1px solid rgba(255,255,255,0.3); border-radius: 5px;
     font-size: 12px; font-family: inherit;
-    background: rgba(255,255,255,0.15); color: #fff;
+    background: rgba(255,255,255,0.15); color: #fff; cursor: pointer;
   }
-  .hdr-select { cursor: pointer; }
-  .hdr-input { width: 90px; }
-  .hdr-input:focus { outline: none; border-color: rgba(255,255,255,0.7); }
 
   .hdr-stats {
     flex: 1;
@@ -346,43 +330,36 @@
   .chart-area {
     grid-column: 2;
     grid-row: 2;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 10px 16px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 transparent;
   }
 
   .warnings-row { flex-shrink: 0; }
-
-  .banner {
-    flex-shrink: 0;
-    background: #fff;
-    border-radius: 8px;
-    padding: 10px 16px;
-    font-size: 14px;
-    color: #333;
-    line-height: 1.5;
-    border-left: 4px solid #2563eb;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .b-name { font-weight: 700; color: #1A1A1A; }
-  .b-tax  { color: #dc2626; }
-  .b-date { color: #2563eb; }
-  .b-ded  { margin-left: 8px; font-size: 12px; color: #666; border-left: 1px solid #e5e7eb;
-            padding-left: 8px; }
 
   .chart-card {
     background: #fff;
     border-radius: 10px;
     padding: 12px 16px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    flex-shrink: 0;
   }
+
+  .sankey-card {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .sankey-card > :global(.flow-wrap) {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .budget-card { flex-shrink: 0; }
 
   /* ── Sidebar (input panel) ───────────────────────────────────────────────── */
   .input-panel {
