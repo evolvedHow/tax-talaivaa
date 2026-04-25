@@ -6,6 +6,7 @@
 
   export let levers: Lever[];
   export let scenario: ScenarioInputs;
+  export let compact: boolean = false;
 
   function handleChange(lever: Lever, raw: string | boolean) {
     if (lever.type === 'toggle') {
@@ -37,7 +38,7 @@
   }
 </script>
 
-<div class="controls">
+<div class="controls" class:compact>
   {#each levers as lever (lever.id)}
     <div class="lever">
       <!-- Label row -->
@@ -122,6 +123,9 @@
     flex-direction: column;
     gap: 12px;
   }
+  .controls.compact { gap: 7px; }
+  .controls.compact .slider-bounds { display: none; }
+  .controls.compact .direct-input { width: 60px; }
   .lever {
     display: flex;
     flex-direction: column;

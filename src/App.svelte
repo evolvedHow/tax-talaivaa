@@ -32,7 +32,7 @@
   // Itemized deductions (below-the-line, reduce AGI → taxable)
   const S_ITEMIZED     = ['state_local_tax','mortgage_interest','charitable_contributions'];
   // Credits & personal
-  const S_CREDITS      = ['num_children','age','over_65','iso_options_exercised','has_amt_preference_items'];
+  const S_CREDITS      = ['num_children','age','over_65'];
   // Tax settings
   const S_SETTINGS     = ['filing_status','state','federal_withheld','state_withheld'];
 
@@ -197,7 +197,7 @@
               <span class="sec-title">Ordinary Income</span>
               <span class="sec-tag">brackets 10–37%</span>
             </div>
-            <Controls levers={rules.levers.filter(l => S_ORDINARY.includes(l.id))} {scenario} />
+            <Controls levers={rules.levers.filter(l => S_ORDINARY.includes(l.id))} {scenario} compact={true} />
           </div>
 
           <!-- CAPITAL & PREFERENTIAL -->
@@ -206,16 +206,16 @@
               <span class="sec-title">Capital &amp; Preferential</span>
               <span class="sec-tag">0 / 15 / 20%</span>
             </div>
-            <Controls levers={rules.levers.filter(l => S_PREFERENTIAL.includes(l.id))} {scenario} />
+            <Controls levers={rules.levers.filter(l => S_PREFERENTIAL.includes(l.id))} {scenario} compact={true} />
           </div>
 
           <!-- PASSIVE / INVESTMENT -->
-          <div class="sec sec-narrow" style="--c:#0d9488">
+          <div class="sec" style="--c:#0d9488">
             <div class="sec-hdr">
               <span class="sec-title">Passive / Rental</span>
               <span class="sec-tag">ordinary + NIIT</span>
             </div>
-            <Controls levers={rules.levers.filter(l => S_PASSIVE.includes(l.id))} {scenario} />
+            <Controls levers={rules.levers.filter(l => S_PASSIVE.includes(l.id))} {scenario} compact={true} />
           </div>
 
           <!-- DEDUCTIONS -->
@@ -224,9 +224,9 @@
               <span class="sec-title">Deductions</span>
             </div>
             <p class="sub-hdr">Above the line</p>
-            <Controls levers={rules.levers.filter(l => S_ABOVE_LINE.includes(l.id))} {scenario} />
+            <Controls levers={rules.levers.filter(l => S_ABOVE_LINE.includes(l.id))} {scenario} compact={true} />
             <p class="sub-hdr">Itemized</p>
-            <Controls levers={rules.levers.filter(l => S_ITEMIZED.includes(l.id))} {scenario} />
+            <Controls levers={rules.levers.filter(l => S_ITEMIZED.includes(l.id))} {scenario} compact={true} />
           </div>
 
           <!-- CREDITS & PERSONAL -->
@@ -234,7 +234,7 @@
             <div class="sec-hdr">
               <span class="sec-title">Credits &amp; Personal</span>
             </div>
-            <Controls levers={rules.levers.filter(l => S_CREDITS.includes(l.id))} {scenario} />
+            <Controls levers={rules.levers.filter(l => S_CREDITS.includes(l.id))} {scenario} compact={true} />
           </div>
 
           <!-- TAX SETTINGS -->
@@ -242,7 +242,7 @@
             <div class="sec-hdr">
               <span class="sec-title">Tax Settings</span>
             </div>
-            <Controls levers={rules.levers.filter(l => S_SETTINGS.includes(l.id))} {scenario} />
+            <Controls levers={rules.levers.filter(l => S_SETTINGS.includes(l.id))} {scenario} compact={true} />
             {#if rules.states[String(scenario.state ?? 'none')]?.sub_jurisdictions}
               <div class="inline-lever">
                 <label class="lever-label" for="sub-j">Sub-Jurisdiction</label>
@@ -278,38 +278,42 @@
   .err pre { background: #fef2f2; padding: 10px; border-radius: 6px;
              font-size: 12px; white-space: pre-wrap; color: #7f1d1d; }
 
-  /* ── Page layout: header / chart / panel ─────────────────────────────────── */
+  /* ── Page layout: grid ───────────────────────────────────────────────────── */
   .page {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: 40px 1fr;
     height: 100vh;
     overflow: hidden;
   }
 
   /* ── Header ──────────────────────────────────────────────────────────────── */
   .hdr {
-    flex-shrink: 0;
+    grid-column: 1 / -1;
+    grid-row: 1;
     display: flex;
     align-items: center;
     gap: 16px;
     padding: 0 16px;
-    height: 46px;
-    background: #1A1A1A;
+    height: 40px;
+    background: #1976D2;
     color: #fff;
+    z-index: 10;
   }
   .hdr-left { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
   .app-title { font-size: 15px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
 
   .hdr-field { display: flex; align-items: center; gap: 5px; }
-  .hdr-lbl { font-size: 10px; font-weight: 600; color: #888; text-transform: uppercase;
-             letter-spacing: 0.06em; white-space: nowrap; }
+  .hdr-lbl { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.7);
+             text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
   .hdr-select, .hdr-input {
-    padding: 3px 7px; border: 1px solid #444; border-radius: 5px;
-    font-size: 12px; font-family: inherit; background: #2a2a2a; color: #fff;
+    padding: 3px 7px; border: 1px solid rgba(255,255,255,0.3); border-radius: 5px;
+    font-size: 12px; font-family: inherit;
+    background: rgba(255,255,255,0.15); color: #fff;
   }
   .hdr-select { cursor: pointer; }
   .hdr-input { width: 90px; }
-  .hdr-input:focus { outline: none; border-color: #3b82f6; }
+  .hdr-input:focus { outline: none; border-color: rgba(255,255,255,0.7); }
 
   .hdr-stats {
     flex: 1;
@@ -321,27 +325,27 @@
     min-width: 0;
   }
   .hs { display: flex; flex-direction: column; align-items: center; padding: 0 10px; flex-shrink: 0; }
-  .hs-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase; color: #888;
-            letter-spacing: 0.05em; white-space: nowrap; }
+  .hs-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase;
+            color: rgba(255,255,255,0.7); letter-spacing: 0.05em; white-space: nowrap; }
   .hs-val { font-size: 14px; font-weight: 700; color: #fff; white-space: nowrap; }
-  .hs-red   { color: #f87171; }
-  .hs-green { color: #4ade80; }
-  .hs-sep { width: 1px; height: 22px; background: #333; flex-shrink: 0; }
+  .hs-red   { color: #ffcdd2; }
+  .hs-green { color: #c8e6c9; }
+  .hs-sep { width: 1px; height: 22px; background: rgba(255,255,255,0.2); flex-shrink: 0; }
 
   .hdr-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-  .disclaimer { font-size: 10px; color: #666; white-space: nowrap; }
+  .disclaimer { font-size: 10px; color: rgba(255,255,255,0.6); white-space: nowrap; }
   .report-btn {
-    padding: 5px 14px; background: #2563eb; color: #fff;
-    border: none; border-radius: 5px; font-size: 12px;
+    padding: 4px 12px; background: rgba(255,255,255,0.2); color: #fff;
+    border: 1px solid rgba(255,255,255,0.4); border-radius: 4px; font-size: 12px;
     font-family: inherit; cursor: pointer; font-weight: 500;
     white-space: nowrap; transition: background 0.15s;
   }
-  .report-btn:hover { background: #1d4ed8; }
+  .report-btn:hover { background: rgba(255,255,255,0.3); }
 
   /* ── Chart area ──────────────────────────────────────────────────────────── */
   .chart-area {
-    flex: 1;
-    min-height: 0;
+    grid-column: 2;
+    grid-row: 2;
     overflow-y: auto;
     padding: 10px 16px;
     display: flex;
@@ -380,30 +384,28 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
 
-  /* ── Input panel ─────────────────────────────────────────────────────────── */
+  /* ── Sidebar (input panel) ───────────────────────────────────────────────── */
   .input-panel {
-    flex-shrink: 0;
-    display: flex;
-    height: clamp(220px, 38vh, 340px);
-    border-top: 2px solid #e2e8f0;
+    grid-column: 1;
+    grid-row: 2;
     background: #fff;
-    overflow: hidden;
-  }
-
-  .sec {
-    flex: 1;
-    min-width: 160px;
-    padding: 10px 12px;
-    border-right: 1px solid #e5e7eb;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.08);
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
-    scrollbar-color: #e5e7eb transparent;
-    box-sizing: border-box;
-    border-top: 3px solid var(--c, #e5e7eb);
+    scrollbar-color: #e0e0e0 transparent;
+    display: flex;
+    flex-direction: column;
+    z-index: 5;
   }
-  .sec:last-child { border-right: none; }
-  .sec-narrow { flex: 0.6; min-width: 130px; }
+
+  .sec {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f0f0f0;
+    border-left: 3px solid var(--c, #e5e7eb);
+    box-sizing: border-box;
+  }
+  .sec:last-child { border-bottom: none; }
 
   .sec-hdr {
     display: flex;
