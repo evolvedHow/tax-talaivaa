@@ -173,29 +173,37 @@ levers:
       dependent living with you more than half the year.
 
   - id: wages_income
-    label: W-2 / Ordinary Income
+    label: W-2 Wages
     type: slider
     min: 0
     max: 1000000
     step: 5000
     default: 150000
     help: >
-      W-2 wages plus other ordinary income such as self-employment or business
-      income. Taxed at graduated federal brackets (10%–37%). Also the starting
-      point for IRA deduction phase-out calculations.
+      W-2 wages from employment. Taxed at graduated federal brackets (10%–37%).
+      Starting point for IRA deduction phase-out calculations.
+
+  - id: bonus
+    label: Bonus / Other Ordinary Income
+    type: slider
+    min: 0
+    max: 500000
+    step: 5000
+    default: 0
+    help: >
+      Cash bonuses, commissions, or other W-2 ordinary income. Taxed at your
+      marginal bracket rate.
 
   - id: investment_income
-    label: Ordinary Investment Income
+    label: Interest / Non-Qualified Dividends
     type: slider
     min: 0
     max: 200000
     step: 1000
     default: 0
     help: >
-      Ordinary (non-qualified) dividends and interest income from taxable
-      accounts. Taxed at your regular income bracket rates — not the
-      preferential 0/15/20% capital gains rates. Counts toward the NIIT
-      threshold at $200K (single) / $250K (MFJ).
+      Bank interest, bond interest, and non-qualified dividends. Taxed at
+      regular income bracket rates. Counts toward the NIIT base.
 
   - id: short_term_capital_gains
     label: Short-Term Capital Gains
@@ -206,9 +214,18 @@ levers:
     default: 0
     help: >
       Gains from assets held 1 year or less. Taxed as ordinary income at your
-      marginal bracket rate — the same as wages. Consider tax-loss harvesting
-      or holding assets over 1 year to convert to long-term rates. These stack
-      on top of W-2 income for bracket purposes.
+      marginal bracket rate.
+
+  - id: business_income
+    label: Business / Self-Employment Income
+    type: slider
+    min: 0
+    max: 1000000
+    step: 5000
+    default: 0
+    help: >
+      Net Schedule C profit after business expenses. Taxed at regular income
+      brackets. SE tax (~15.3%) is not separately modeled.
 
   - id: capital_gains
     label: Long-Term Capital Gains
@@ -219,9 +236,29 @@ levers:
     default: 0
     help: >
       Gains from assets held more than 1 year. Taxed at preferential federal
-      rates: 0%, 15%, or 20%, depending on total income. Long-term gains stack
-      on top of ordinary income when determining which bracket applies — but
-      the gains themselves are taxed at the LTCG rate, not the ordinary rate.
+      rates: 0%, 15%, or 20% depending on total income.
+
+  - id: qualified_dividends
+    label: Qualified Dividends
+    type: slider
+    min: 0
+    max: 500000
+    step: 1000
+    default: 0
+    help: >
+      Dividends from domestic and qualifying foreign corporations. Taxed at the
+      same preferential 0/15/20% rates as long-term capital gains.
+
+  - id: rental_income
+    label: Rental / Passive Income
+    type: slider
+    min: 0
+    max: 500000
+    step: 5000
+    default: 0
+    help: >
+      Net rental income after expenses. Treated as ordinary income (passive
+      activity loss rules not modeled). Counts toward the NIIT base.
 
   - id: ira_contribution
     label: IRA Contribution

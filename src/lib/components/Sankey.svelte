@@ -6,7 +6,9 @@
 
   // ── Colors ───────────────────────────────────────────────────────────────────
   const SRC: Record<string, string> = {
-    wages: '#3b82f6', investment: '#06b6d4', stcg: '#f59e0b', ltcg: '#8b5cf6',
+    wages: '#3b82f6', bonus: '#818cf8', investment: '#06b6d4',
+    stcg: '#f59e0b', business: '#f43f5e', rental: '#0d9488',
+    ltcg: '#8b5cf6', qdiv: '#7c3aed',
   };
   const BRACKET: Record<number, string> = {
     0.10: '#4ade80', 0.12: '#22c55e',
@@ -38,15 +40,23 @@
   function buildSources(r: TaxResult, sc: ScenarioInputs): Seg[] {
     if (!r || r.grossIncome <= 0) return [];
     const g = r.grossIncome;
-    const wages = Math.max(0, Number(sc.wages_income ?? 0));
-    const inv   = Math.max(0, Number(sc.investment_income ?? 0));
-    const stcg  = Math.max(0, Number(sc.short_term_capital_gains ?? 0));
-    const ltcg  = Math.max(0, Number(sc.capital_gains ?? 0));
+    const wages   = Math.max(0, Number(sc.wages_income ?? 0));
+    const bonus   = Math.max(0, Number(sc.bonus ?? 0));
+    const inv     = Math.max(0, Number(sc.investment_income ?? 0));
+    const stcg    = Math.max(0, Number(sc.short_term_capital_gains ?? 0));
+    const biz     = Math.max(0, Number(sc.business_income ?? 0));
+    const rental  = Math.max(0, Number(sc.rental_income ?? 0));
+    const ltcg    = Math.max(0, Number(sc.capital_gains ?? 0));
+    const qdiv    = Math.max(0, Number(sc.qualified_dividends ?? 0));
     const raw = [
-      wages > 0 && { id: 'wages',      label: 'W-2 / Ordinary',      amount: wages, color: SRC.wages },
-      inv   > 0 && { id: 'investment', label: 'Dividends / Interest', amount: inv,   color: SRC.investment },
-      stcg  > 0 && { id: 'stcg',       label: 'Short-Term Gains',     amount: stcg,  color: SRC.stcg },
-      ltcg  > 0 && { id: 'ltcg',       label: 'Long-Term Gains',      amount: ltcg,  color: SRC.ltcg },
+      wages  > 0 && { id: 'wages',      label: 'W-2 Wages',           amount: wages,  color: SRC.wages },
+      bonus  > 0 && { id: 'bonus',      label: 'Bonus / Other',        amount: bonus,  color: SRC.bonus },
+      inv    > 0 && { id: 'investment', label: 'Interest / Non-Qual.', amount: inv,    color: SRC.investment },
+      stcg   > 0 && { id: 'stcg',       label: 'ST Cap Gains',         amount: stcg,   color: SRC.stcg },
+      biz    > 0 && { id: 'business',   label: 'Business / SE',        amount: biz,    color: SRC.business },
+      rental > 0 && { id: 'rental',     label: 'Rental / Passive',     amount: rental, color: SRC.rental },
+      ltcg   > 0 && { id: 'ltcg',       label: 'LT Cap Gains',         amount: ltcg,   color: SRC.ltcg },
+      qdiv   > 0 && { id: 'qdiv',       label: 'Qual. Dividends',      amount: qdiv,   color: SRC.qdiv },
     ].filter(Boolean) as { id: string; label: string; amount: number; color: string }[];
     let cursor = 0;
     return raw.map(s => {
@@ -86,7 +96,11 @@
 
   function buildRibbons(srcs: Seg[], dsts: Seg[], gross: number): Ribbon[] {
     const S = 10000;
-    const ordSrcs = srcs.filter(s => s.id !== 'ltcg');
+    // preferential sources (LTCG rates): ltcg + qualified dividends
+    const prefSrcs = srcs.filter(s => s.id === 'ltcg' || s.id === 'qdiv');
+    const prefTotal = prefSrcs.reduce((sum, s) => sum + s.amount, 0);
+    // ordinary sources: everything else
+    const ordSrcs = srcs.filter(s => s.id !== 'ltcg' && s.id !== 'qdiv');
     const ordTotal = ordSrcs.reduce((sum, s) => sum + s.amount, 0);
     const srcCur: Record<string, number> = {};
     const dstCur: Record<string, number> = {};
@@ -95,14 +109,18 @@
     const out: Ribbon[] = [];
     for (const dst of dsts) {
       if (dst.id.startsWith('ltcg_')) {
-        const src = srcs.find(s => s.id === 'ltcg');
-        if (!src || dst.amount <= 0) continue;
-        const w = (dst.amount / gross) * S;
-        out.push({ srcId: 'ltcg', dstId: dst.id, amount: dst.amount, color: src.color,
-          sx1: srcCur['ltcg'], sx2: srcCur['ltcg'] + w,
-          dx1: dstCur[dst.id], dx2: dstCur[dst.id] + w });
-        srcCur['ltcg'] += w;
-        dstCur[dst.id] += w;
+        // allocate from preferential sources proportionally
+        if (prefTotal <= 0) continue;
+        for (const src of prefSrcs) {
+          const contrib = dst.amount * (src.amount / prefTotal);
+          if (contrib <= 0) continue;
+          const w = (contrib / gross) * S;
+          out.push({ srcId: src.id, dstId: dst.id, amount: contrib, color: src.color,
+            sx1: srcCur[src.id], sx2: srcCur[src.id] + w,
+            dx1: dstCur[dst.id], dx2: dstCur[dst.id] + w });
+          srcCur[src.id] += w;
+          dstCur[dst.id] += w;
+        }
       } else {
         if (ordTotal <= 0) continue;
         for (const src of ordSrcs) {

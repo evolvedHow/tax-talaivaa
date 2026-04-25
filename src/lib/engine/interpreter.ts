@@ -56,12 +56,19 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
   const fs = getFilingStatus(scenario);
 
   // ── Gross Income ───────────────────────────────────────────────────────────
-  const wagesIncome = Number(scenario['wages_income'] ?? 0);
-  const investmentIncome = Number(scenario['investment_income'] ?? 0);
-  const shortTermCapGains = Number(scenario['short_term_capital_gains'] ?? 0);
-  const capitalGains = Number(scenario['capital_gains'] ?? 0);
-  // STCG is ordinary income; LTCG is taxed at preferential rates separately
-  const grossIncome = wagesIncome + investmentIncome + shortTermCapGains + capitalGains;
+  const wagesIncome        = Number(scenario['wages_income'] ?? 0);
+  const bonus              = Number(scenario['bonus'] ?? 0);
+  const investmentIncome   = Number(scenario['investment_income'] ?? 0);   // interest + non-qual divs
+  const shortTermCapGains  = Number(scenario['short_term_capital_gains'] ?? 0);
+  const businessIncome     = Number(scenario['business_income'] ?? 0);     // net Schedule C
+  const capitalGains       = Number(scenario['capital_gains'] ?? 0);       // LTCG
+  const qualifiedDividends = Number(scenario['qualified_dividends'] ?? 0); // preferential rate
+  const rentalIncome       = Number(scenario['rental_income'] ?? 0);       // passive, ordinary rate
+
+  // Ordinary income = all income taxed at regular brackets
+  // Preferential income (LTCG + QD) taxed separately at 0/15/20%
+  const grossIncome = wagesIncome + bonus + investmentIncome + shortTermCapGains
+                    + businessIncome + capitalGains + qualifiedDividends + rentalIncome;
 
   // ── IRA Deduction ─────────────────────────────────────────────────────────
   const age = Number(scenario['age'] ?? 0);
@@ -144,8 +151,11 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
   const deductionType: 'standard' | 'itemized' = useItemized ? 'itemized' : 'standard';
 
   // ── Taxable Income ────────────────────────────────────────────────────────
-  // LTCG taxed separately; STCG is ordinary income
-  const ordinaryIncome = Math.max(0, wagesIncome + investmentIncome + shortTermCapGains - deductionAmount);
+  // Ordinary = wages + bonus + interest + STCG + business + rental (all taxed at regular brackets)
+  // Preferential = LTCG + qualified dividends (taxed at 0/15/20%)
+  const ordinaryBase = wagesIncome + bonus + investmentIncome + shortTermCapGains + businessIncome + rentalIncome;
+  const ordinaryIncome = Math.max(0, ordinaryBase - deductionAmount);
+  const preferentialIncome = capitalGains + qualifiedDividends;
   const taxableIncome = Math.max(0, grossIncome - deductionAmount);
 
   // ── Federal Ordinary Income Tax ───────────────────────────────────────────
@@ -159,9 +169,9 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
   let capitalGainsTax = 0;
   const capitalGainsBracketBreakdown: BracketBreakdown[] = [];
 
-  if (capitalGains > 0 && cgBrackets.length > 0) {
+  if (preferentialIncome > 0 && cgBrackets.length > 0) {
     const sorted = [...cgBrackets].sort((a, b) => a.floor - b.floor);
-    let cgRemaining = capitalGains;
+    let cgRemaining = preferentialIncome;
     let cgBase2 = cgBase;
 
     for (const b of sorted) {
@@ -210,7 +220,7 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
   const surtaxes: Record<string, number> = {};
   const niitRules = rules.federal.surtaxes.niit;
   const niitThreshold = niitRules.threshold[fs] ?? Infinity;
-  const netInvestmentIncome = investmentIncome + capitalGains;
+  const netInvestmentIncome = investmentIncome + capitalGains + qualifiedDividends + rentalIncome;
 
   if (magi > niitThreshold && netInvestmentIncome > 0) {
     const niitBase = Math.min(netInvestmentIncome, magi - niitThreshold);
@@ -226,6 +236,10 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
   });
   if (hasAmtTrigger) {
     warnings.push('AMT may apply — consult a tax professional.');
+  }
+  if (businessIncome > 0) {
+    const seTax = Math.round(businessIncome * 0.9235 * 0.153);
+    warnings.push(`SE tax on business income: ~$${seTax.toLocaleString()} (not included in totals above — add to your actual liability).`);
   }
   if (surtaxes['niit']) {
     warnings.push(`NIIT applies: $${Math.round(surtaxes['niit']).toLocaleString()} at ${(niitRules.rate * 100).toFixed(1)}%`);

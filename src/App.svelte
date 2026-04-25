@@ -11,15 +11,30 @@
   import Sankey from './lib/components/Sankey.svelte';
   import BudgetBar from './lib/components/BudgetBar.svelte';
 
-  // ── Tax config registry ────────────────────────────────────────────────────
   const CONFIGS = [
-    { id: 'tax-2025', label: '2025 Tax Rules' },
-    { id: 'tax-2024', label: '2024 Tax Rules' },
+    { id: 'tax-2025', label: '2025' },
+    { id: 'tax-2024', label: '2024' },
   ];
 
   let selectedConfig = 'tax-2025';
   let showReport = false;
   let userName = 'Vish';
+
+  // ── Input panel section definitions (by tax treatment) ────────────────────
+  // Ordinary: taxed at regular brackets
+  const S_ORDINARY    = ['wages_income','bonus','investment_income','short_term_capital_gains','business_income'];
+  // Preferential: 0/15/20% LTCG rates
+  const S_PREFERENTIAL = ['capital_gains','qualified_dividends'];
+  // Passive/investment: ordinary rate, triggers NIIT
+  const S_PASSIVE      = ['rental_income'];
+  // Above-the-line adjustments (reduce gross → AGI)
+  const S_ABOVE_LINE   = ['ira_contribution','has_workplace_plan'];
+  // Itemized deductions (below-the-line, reduce AGI → taxable)
+  const S_ITEMIZED     = ['state_local_tax','mortgage_interest','charitable_contributions'];
+  // Credits & personal
+  const S_CREDITS      = ['num_children','age','over_65','iso_options_exercised','has_amt_preference_items'];
+  // Tax settings
+  const S_SETTINGS     = ['filing_status','state','federal_withheld','state_withheld'];
 
   function taxFreedomDate(totalTax: number, grossIncome: number, taxYear: number): string {
     if (grossIncome <= 0) return '—';
@@ -29,18 +44,6 @@
       .toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
   }
 
-  const LEFT_LEVERS  = ['filing_status','wages_income','investment_income','short_term_capital_gains','capital_gains','age','over_65','state'];
-  const RIGHT_LEVERS = ['ira_contribution','has_workplace_plan','num_children','state_local_tax','mortgage_interest','charitable_contributions','iso_options_exercised','has_amt_preference_items','federal_withheld','state_withheld'];
-
-  const CARD_HELP = {
-    totalTax: 'Sum of federal income tax (including capital gains tax and credits), NIIT surtax, and state/local taxes. Does not include FICA/payroll taxes.',
-    federalTax: 'Federal income tax after applying credits such as the Child Tax Credit. Includes tax on long-term capital gains at preferential rates.',
-    deductionType: 'The app automatically picks whichever is higher: Standard Deduction or Itemized Deductions (SALT + mortgage interest + charity + IRA). "Itemized" means you benefit from listing individual deductions.',
-    federalOwed: 'Federal tax liability minus what was already withheld from your W-2(s). Positive = you owe at filing. Negative = the IRS owes you a refund.',
-    stateOwed: 'State + local tax liability minus what was withheld. Positive = owe at filing. Negative = state refund.',
-  } as const;
-
-  // ── YAML Fetch + Validation ────────────────────────────────────────────────
   function validateRules(raw: unknown): TaxRules {
     const r = raw as Record<string, unknown>;
     const missing = ['meta', 'federal', 'levers', 'states'].filter(k => !(k in r));
@@ -78,9 +81,7 @@
 </script>
 
 <svelte:head>
-  <style>
-    html, body { height: 100%; overflow: hidden; margin: 0; padding: 0; }
-  </style>
+  <style>html, body { height: 100%; overflow: hidden; margin: 0; padding: 0; }</style>
 </svelte:head>
 
 <main>
@@ -88,10 +89,7 @@
     <div class="loading">Loading tax rules…</div>
 
   {:else if $rulesError}
-    <div class="error-screen">
-      <h2>Failed to load tax rules</h2>
-      <pre class="error-detail">{$rulesError}</pre>
-    </div>
+    <div class="err"><h2>Failed to load tax rules</h2><pre>{$rulesError}</pre></div>
 
   {:else if $rulesStore}
     {@const rules = $rulesStore}
@@ -104,452 +102,352 @@
         <ReportView {rules} {result} {scenario} />
       </div>
     {:else}
-      <div class="layout">
+      <div class="page">
 
-        <!-- LEFT: Income & Personal -->
-        <aside class="sidebar sidebar-left">
-          <div class="sidebar-header">
-            <div class="title-row">
-              <h1 class="app-title">TAX TALAIVAA</h1>
-            </div>
-            <div class="config-row">
-              <label for="config-select" class="config-label">Tax Year</label>
-              <select
-                id="config-select"
-                class="config-select"
-                value={selectedConfig}
-                on:change={onConfigChange}
-              >
-                {#each CONFIGS as cfg}
-                  <option value={cfg.id}>{cfg.label}</option>
-                {/each}
+        <!-- ── Header ──────────────────────────────────────────────────────── -->
+        <header class="hdr">
+          <div class="hdr-left">
+            <span class="app-title">TAX TALAIVAA</span>
+            <div class="hdr-field">
+              <label class="hdr-lbl" for="cfg">Year</label>
+              <select id="cfg" class="hdr-select" value={selectedConfig} on:change={onConfigChange}>
+                {#each CONFIGS as c}<option value={c.id}>{c.label}</option>{/each}
               </select>
             </div>
-            <div class="name-row">
-              <label for="user-name" class="config-label">Your Name</label>
-              <input
-                id="user-name"
-                type="text"
-                bind:value={userName}
-                class="name-input"
-                placeholder="Your name"
-                maxlength="30"
-              />
+            <div class="hdr-field">
+              <label class="hdr-lbl" for="uname">Name</label>
+              <input id="uname" class="hdr-input" type="text" bind:value={userName}
+                     placeholder="Your name" maxlength="30" />
             </div>
           </div>
-          <div class="disclaimer">
-            <span class="disclaimer-icon">⚠</span>
-            Estimates only — not official tax advice. No data is stored; all inputs are lost when you leave this page.
+          <div class="hdr-stats">
+            {#if result}
+              <div class="hs"><span class="hs-lbl">Gross</span><span class="hs-val">${Math.round(result.grossIncome).toLocaleString()}</span></div>
+              <div class="hs-sep"></div>
+              <div class="hs"><span class="hs-lbl">Total Tax</span><span class="hs-val hs-red">${Math.round(result.totalTax).toLocaleString()}</span></div>
+              <div class="hs-sep"></div>
+              <div class="hs"><span class="hs-lbl">Federal</span><span class="hs-val">${Math.round(result.federalTax).toLocaleString()}</span></div>
+              {#if result.stateTax + result.subJurisdictionTax > 0}
+                <div class="hs-sep"></div>
+                <div class="hs"><span class="hs-lbl">State</span><span class="hs-val">${Math.round(result.stateTax + result.subJurisdictionTax).toLocaleString()}</span></div>
+              {/if}
+              <div class="hs-sep"></div>
+              <div class="hs"><span class="hs-lbl">Eff. Rate</span><span class="hs-val">{(result.effectiveTotalRate * 100).toFixed(1)}%</span></div>
+              <div class="hs-sep"></div>
+              <div class="hs"><span class="hs-lbl">Marginal</span><span class="hs-val">{(result.marginalRate * 100).toFixed(0)}%</span></div>
+              <div class="hs-sep"></div>
+              <div class="hs"><span class="hs-lbl">Take-home</span><span class="hs-val hs-green">${Math.round(result.grossIncome - result.totalTax).toLocaleString()}</span></div>
+              {#if result.federalWithheld > 0}
+                {@const fo = result.federalOwed}
+                <div class="hs-sep"></div>
+                <div class="hs">
+                  <span class="hs-lbl">Fed {fo >= 0 ? 'Owed' : 'Refund'}</span>
+                  <span class="hs-val" class:hs-red={fo > 0} class:hs-green={fo < 0}>
+                    {fo === 0 ? 'Even' : `$${Math.abs(Math.round(fo)).toLocaleString()}`}
+                  </span>
+                </div>
+              {/if}
+            {/if}
           </div>
-          <p class="sidebar-section-label">INCOME</p>
-          <Controls levers={rules.levers.filter(l => LEFT_LEVERS.includes(l.id))} {scenario} />
-          {#if rules.states[String(scenario.state ?? 'none')]?.sub_jurisdictions}
-            <div class="inline-lever">
-              <label class="inline-lever-label" for="sub-jurisdiction">Sub-Jurisdiction</label>
-              <select id="sub-jurisdiction"
-                value={String(scenario.sub_jurisdiction ?? 'none')}
-                on:change={(e) => updateLever('sub_jurisdiction', e.currentTarget.value)}
-              >
-                <option value="none">None</option>
-                {#each Object.keys(rules.states[String(scenario.state ?? 'none')]?.sub_jurisdictions ?? {}) as key}
-                  <option value={key}>{key}</option>
-                {/each}
-              </select>
-            </div>
-          {/if}
-        </aside>
+          <div class="hdr-right">
+            <span class="disclaimer">⚠ Estimates only — not tax advice</span>
+            {#if result}
+              <button class="report-btn" on:click={() => showReport = true}>Report →</button>
+            {/if}
+          </div>
+        </header>
 
-        <!-- CENTER: Dashboard -->
-        <section class="dashboard">
+        <!-- ── Chart area ──────────────────────────────────────────────────── -->
+        <div class="chart-area">
           {#if result}
-
             {#if result.warnings.length > 0}
-              <div class="warnings-row">
-                <Overlays warnings={result.warnings} />
-              </div>
+              <div class="warnings-row"><Overlays warnings={result.warnings} /></div>
             {/if}
 
-            <!-- Personalized banner -->
-            <div class="personal-banner">
-              <span class="hello-name">{userName || 'Hey'}</span>,
-              your taxes are <strong class="banner-tax">${Math.round(result.totalTax).toLocaleString()}</strong>
+            <div class="banner">
+              <span class="b-name">{userName || 'Hey'}</span>, your taxes are
+              <strong class="b-tax">${Math.round(result.totalTax).toLocaleString()}</strong>
               — you worked until
-              <strong class="banner-date">{taxFreedomDate(result.totalTax, result.grossIncome, rules.meta.tax_year)}</strong>
+              <strong class="b-date">{taxFreedomDate(result.totalTax, result.grossIncome, rules.meta.tax_year)}</strong>
               to pay them.
+              <span class="b-ded">
+                {result.deductionType === 'itemized' ? 'Itemized deductions' : 'Standard deduction'}:
+                ${Math.round(result.deductionAmount).toLocaleString()}
+              </span>
             </div>
 
-            <!-- Compact stats strip -->
-            <div class="stats-strip">
-              <div class="stat">
-                <span class="stat-lbl">Total Tax</span>
-                <span class="stat-val">${Math.round(result.totalTax).toLocaleString()}</span>
-              </div>
-              <div class="stat-sep"></div>
-              <div class="stat">
-                <span class="stat-lbl">Federal</span>
-                <span class="stat-val">${Math.round(result.federalTax).toLocaleString()}</span>
-              </div>
-              <div class="stat-sep"></div>
-              <div class="stat">
-                <span class="stat-lbl">Deduction</span>
-                <span class="stat-val" class:blue={result.deductionType === 'itemized'}>
-                  {result.deductionType === 'itemized' ? 'Itemized' : 'Standard'}
-                </span>
-              </div>
-              <div class="stat-sep"></div>
-              <div class="stat">
-                <span class="stat-lbl">Eff. Federal</span>
-                <span class="stat-val">{(result.effectiveFederalRate * 100).toFixed(1)}%</span>
-              </div>
-              <div class="stat-sep"></div>
-              <div class="stat">
-                <span class="stat-lbl">Eff. Total</span>
-                <span class="stat-val">{(result.effectiveTotalRate * 100).toFixed(1)}%</span>
-              </div>
-              <div class="stat-sep"></div>
-              <div class="stat">
-                <span class="stat-lbl">Marginal</span>
-                <span class="stat-val">{(result.marginalRate * 100).toFixed(0)}%</span>
-              </div>
-              {#if result.federalWithheld > 0}
-                {@const fedOwe = result.federalOwed}
-                <div class="stat-sep"></div>
-                <div class="stat">
-                  <span class="stat-lbl">Fed {fedOwe >= 0 ? 'Owed' : 'Refund'}</span>
-                  <span class="stat-val" class:red={fedOwe > 0} class:green={fedOwe < 0}>
-                    {Math.abs(Math.round(fedOwe)) === 0 ? 'Even' : `$${Math.abs(Math.round(fedOwe)).toLocaleString()}`}
-                  </span>
-                </div>
-              {/if}
-              {#if result.stateWithheld > 0}
-                {@const stOwe = result.stateOwed}
-                <div class="stat-sep"></div>
-                <div class="stat">
-                  <span class="stat-lbl">State {stOwe >= 0 ? 'Owed' : 'Refund'}</span>
-                  <span class="stat-val" class:red={stOwe > 0} class:green={stOwe < 0}>
-                    {Math.abs(Math.round(stOwe)) === 0 ? 'Even' : `$${Math.abs(Math.round(stOwe)).toLocaleString()}`}
-                  </span>
-                </div>
-              {/if}
-            </div>
-
-            <!-- Ribbon chart — full width -->
-            <div class="sankey-area">
+            <div class="chart-card">
               <Sankey {result} {scenario} />
             </div>
 
-            <!-- Budget bar — full width, below ribbon -->
-            <div class="budget-bar-row">
+            <div class="chart-card">
               <BudgetBar federalTax={result.federalTax} taxYear={rules.meta.tax_year} />
             </div>
-
-            <!-- Report button + disclaimer -->
-            <div class="report-row">
-              <button class="report-btn" on:click={() => showReport = true}>
-                Generate Tax Optimization Report →
-              </button>
-              <p class="report-disclaimer">
-                This is not an official tax report and should not be used for filing.
-                No data is saved — print or download your report before leaving.
-              </p>
-            </div>
-
           {:else}
             <div class="loading">Computing…</div>
           {/if}
-        </section>
+        </div>
 
-        <!-- RIGHT: Deductions & Withholding -->
-        <aside class="sidebar sidebar-right">
-          <p class="sidebar-section-label">DEDUCTIONS</p>
-          <Controls levers={rules.levers.filter(l => RIGHT_LEVERS.includes(l.id))} {scenario} />
-        </aside>
+        <!-- ── Input panel ─────────────────────────────────────────────────── -->
+        <div class="input-panel">
 
+          <!-- ORDINARY INCOME -->
+          <div class="sec" style="--c:#3b82f6">
+            <div class="sec-hdr">
+              <span class="sec-title">Ordinary Income</span>
+              <span class="sec-tag">brackets 10–37%</span>
+            </div>
+            <Controls levers={rules.levers.filter(l => S_ORDINARY.includes(l.id))} {scenario} />
+          </div>
+
+          <!-- CAPITAL & PREFERENTIAL -->
+          <div class="sec" style="--c:#8b5cf6">
+            <div class="sec-hdr">
+              <span class="sec-title">Capital &amp; Preferential</span>
+              <span class="sec-tag">0 / 15 / 20%</span>
+            </div>
+            <Controls levers={rules.levers.filter(l => S_PREFERENTIAL.includes(l.id))} {scenario} />
+          </div>
+
+          <!-- PASSIVE / INVESTMENT -->
+          <div class="sec sec-narrow" style="--c:#0d9488">
+            <div class="sec-hdr">
+              <span class="sec-title">Passive / Rental</span>
+              <span class="sec-tag">ordinary + NIIT</span>
+            </div>
+            <Controls levers={rules.levers.filter(l => S_PASSIVE.includes(l.id))} {scenario} />
+          </div>
+
+          <!-- DEDUCTIONS -->
+          <div class="sec" style="--c:#16a34a">
+            <div class="sec-hdr">
+              <span class="sec-title">Deductions</span>
+            </div>
+            <p class="sub-hdr">Above the line</p>
+            <Controls levers={rules.levers.filter(l => S_ABOVE_LINE.includes(l.id))} {scenario} />
+            <p class="sub-hdr">Itemized</p>
+            <Controls levers={rules.levers.filter(l => S_ITEMIZED.includes(l.id))} {scenario} />
+          </div>
+
+          <!-- CREDITS & PERSONAL -->
+          <div class="sec" style="--c:#f59e0b">
+            <div class="sec-hdr">
+              <span class="sec-title">Credits &amp; Personal</span>
+            </div>
+            <Controls levers={rules.levers.filter(l => S_CREDITS.includes(l.id))} {scenario} />
+          </div>
+
+          <!-- TAX SETTINGS -->
+          <div class="sec" style="--c:#64748b">
+            <div class="sec-hdr">
+              <span class="sec-title">Tax Settings</span>
+            </div>
+            <Controls levers={rules.levers.filter(l => S_SETTINGS.includes(l.id))} {scenario} />
+            {#if rules.states[String(scenario.state ?? 'none')]?.sub_jurisdictions}
+              <div class="inline-lever">
+                <label class="lever-label" for="sub-j">Sub-Jurisdiction</label>
+                <select id="sub-j"
+                  value={String(scenario.sub_jurisdiction ?? 'none')}
+                  on:change={(e) => updateLever('sub_jurisdiction', e.currentTarget.value)}
+                >
+                  <option value="none">None</option>
+                  {#each Object.keys(rules.states[String(scenario.state ?? 'none')]?.sub_jurisdictions ?? {}) as key}
+                    <option value={key}>{key}</option>
+                  {/each}
+                </select>
+              </div>
+            {/if}
+          </div>
+
+        </div>
       </div>
     {/if}
   {/if}
 </main>
 
 <style>
-  :global(html, body) {
-    height: 100%;
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-  }
+  :global(html, body) { height: 100%; overflow: hidden; margin: 0; padding: 0; }
 
-  main {
+  main { height: 100vh; overflow: hidden; background: #f1f5f9; font-family: inherit; }
+
+  .loading { display: flex; align-items: center; justify-content: center;
+             height: 100vh; font-size: 15px; color: #666; }
+  .err { max-width: 560px; margin: 60px auto; padding: 24px; background: #fff;
+         border-radius: 10px; border: 2px solid #ef4444; }
+  .err h2 { color: #dc2626; margin-bottom: 12px; font-size: 16px; }
+  .err pre { background: #fef2f2; padding: 10px; border-radius: 6px;
+             font-size: 12px; white-space: pre-wrap; color: #7f1d1d; }
+
+  /* ── Page layout: header / chart / panel ─────────────────────────────────── */
+  .page {
+    display: flex;
+    flex-direction: column;
     height: 100vh;
     overflow: hidden;
-    background: #F5F5F5;
   }
 
-  .loading {
+  /* ── Header ──────────────────────────────────────────────────────────────── */
+  .hdr {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
-    height: 100vh;
-    font-size: 16px;
-    color: #666;
+    gap: 16px;
+    padding: 0 16px;
+    height: 46px;
+    background: #1A1A1A;
+    color: #fff;
   }
+  .hdr-left { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+  .app-title { font-size: 15px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
 
-  .error-screen {
-    max-width: 560px;
-    margin: 60px auto;
-    padding: 24px;
-    background: #fff;
-    border-radius: 10px;
-    border: 2px solid #ef4444;
+  .hdr-field { display: flex; align-items: center; gap: 5px; }
+  .hdr-lbl { font-size: 10px; font-weight: 600; color: #888; text-transform: uppercase;
+             letter-spacing: 0.06em; white-space: nowrap; }
+  .hdr-select, .hdr-input {
+    padding: 3px 7px; border: 1px solid #444; border-radius: 5px;
+    font-size: 12px; font-family: inherit; background: #2a2a2a; color: #fff;
   }
-  .error-screen h2 { color: #dc2626; margin-bottom: 12px; font-size: 16px; }
-  .error-detail {
-    background: #fef2f2;
-    padding: 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    white-space: pre-wrap;
-    color: #7f1d1d;
-  }
+  .hdr-select { cursor: pointer; }
+  .hdr-input { width: 90px; }
+  .hdr-input:focus { outline: none; border-color: #3b82f6; }
 
-  /* Three-column layout filling viewport */
-  .layout {
-    display: grid;
-    grid-template-columns: 200px 1fr 200px;
-    height: 100vh;
-    overflow: hidden;
-  }
-
-  .sidebar {
-    background: #fff;
-    padding: 16px 14px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    height: 100%;
-    scrollbar-width: thin;
-    scrollbar-color: #e5e7eb transparent;
-    box-sizing: border-box;
-  }
-  .sidebar-left  { border-right: 1px solid #e5e7eb; }
-  .sidebar-right { border-left: 1px solid #e5e7eb; }
-
-  .sidebar-header { margin-bottom: 12px; }
-  .title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .app-title { font-size: 17px; font-weight: 700; margin: 0; }
-
-  .config-row, .name-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 5px;
-  }
-  .config-label {
-    font-size: 10px;
-    font-weight: 600;
-    color: #666;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-    min-width: 56px;
-  }
-  .config-select, .name-input {
+  .hdr-stats {
     flex: 1;
-    padding: 5px 8px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 12px;
-    font-family: inherit;
-    background: #fff;
-  }
-  .config-select { cursor: pointer; }
-  .name-input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,0.12); }
-
-  .disclaimer {
-    font-size: 10px;
-    color: #666;
-    line-height: 1.4;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 5px;
-    padding: 6px 8px;
-    margin-bottom: 12px;
-  }
-  .disclaimer-icon { color: #f59e0b; margin-right: 2px; }
-
-  .sidebar-section-label {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: #888;
-    margin-bottom: 12px;
-    margin-top: 0;
-  }
-
-  .inline-lever {
     display: flex;
-    flex-direction: column;
-    gap: 3px;
-    margin-top: 12px;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    min-width: 0;
   }
-  .inline-lever-label {
-    font-size: 11px;
-    font-weight: 500;
-    color: #1A1A1A;
-  }
-  .inline-lever select {
-    width: 100%;
-    padding: 5px 8px;
-    border: 1px solid #d1d5db;
-    border-radius: 5px;
-    font-size: 12px;
-    font-family: inherit;
-    background: #fff;
-    cursor: pointer;
-  }
+  .hs { display: flex; flex-direction: column; align-items: center; padding: 0 10px; flex-shrink: 0; }
+  .hs-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase; color: #888;
+            letter-spacing: 0.05em; white-space: nowrap; }
+  .hs-val { font-size: 14px; font-weight: 700; color: #fff; white-space: nowrap; }
+  .hs-red   { color: #f87171; }
+  .hs-green { color: #4ade80; }
+  .hs-sep { width: 1px; height: 22px; background: #333; flex-shrink: 0; }
 
-  /* Center dashboard */
-  .dashboard {
+  .hdr-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .disclaimer { font-size: 10px; color: #666; white-space: nowrap; }
+  .report-btn {
+    padding: 5px 14px; background: #2563eb; color: #fff;
+    border: none; border-radius: 5px; font-size: 12px;
+    font-family: inherit; cursor: pointer; font-weight: 500;
+    white-space: nowrap; transition: background 0.15s;
+  }
+  .report-btn:hover { background: #1d4ed8; }
+
+  /* ── Chart area ──────────────────────────────────────────────────────────── */
+  .chart-area {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 10px 16px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 12px 16px;
-    height: 100%;
-    overflow: hidden;
-    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
   }
 
   .warnings-row { flex-shrink: 0; }
 
-  /* Personalized banner */
-  .personal-banner {
+  .banner {
     flex-shrink: 0;
     background: #fff;
     border-radius: 8px;
-    padding: 11px 18px;
-    font-size: 15px;
+    padding: 10px 16px;
+    font-size: 14px;
     color: #333;
-    line-height: 1.4;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    line-height: 1.5;
     border-left: 4px solid #2563eb;
-  }
-  .hello-name  { font-weight: 700; color: #1A1A1A; }
-  .banner-tax  { color: #dc2626; }
-  .banner-date { color: #2563eb; }
-
-  /* Compact stats strip */
-  .stats-strip {
     display: flex;
     align-items: center;
-    background: #fff;
-    border-radius: 8px;
-    padding: 6px 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    flex-shrink: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
+    gap: 6px;
+    flex-wrap: wrap;
   }
-  .stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0 14px;
-    gap: 1px;
-  }
-  .stat-lbl {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #777;
-    white-space: nowrap;
-  }
-  .stat-val {
-    font-size: 18px;
-    font-weight: 700;
-    color: #1A1A1A;
-    white-space: nowrap;
-    line-height: 1.2;
-  }
-  .stat-val.blue  { color: #2563eb; }
-  .stat-val.red   { color: #dc2626; }
-  .stat-val.green { color: #16a34a; }
-  .stat-sep {
-    width: 1px;
-    height: 30px;
-    background: #e5e7eb;
-    flex-shrink: 0;
-  }
+  .b-name { font-weight: 700; color: #1A1A1A; }
+  .b-tax  { color: #dc2626; }
+  .b-date { color: #2563eb; }
+  .b-ded  { margin-left: 8px; font-size: 12px; color: #666; border-left: 1px solid #e5e7eb;
+            padding-left: 8px; }
 
-  .sankey-area {
-    flex: none;
-    overflow: visible;
-  }
-
-  /* Budget bar — fixed height at bottom */
-  .budget-bar-row {
-    flex-shrink: 0;
+  .chart-card {
     background: #fff;
     border-radius: 10px;
     padding: 12px 16px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
 
-  .report-row {
+  /* ── Input panel ─────────────────────────────────────────────────────────── */
+  .input-panel {
     flex-shrink: 0;
     display: flex;
+    height: clamp(220px, 38vh, 340px);
+    border-top: 2px solid #e2e8f0;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .sec {
+    flex: 1;
+    min-width: 160px;
+    padding: 10px 12px;
+    border-right: 1px solid #e5e7eb;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #e5e7eb transparent;
+    box-sizing: border-box;
+    border-top: 3px solid var(--c, #e5e7eb);
+  }
+  .sec:last-child { border-right: none; }
+  .sec-narrow { flex: 0.6; min-width: 130px; }
+
+  .sec-hdr {
+    display: flex;
     align-items: baseline;
-    gap: 14px;
+    gap: 6px;
+    margin-bottom: 8px;
     flex-wrap: wrap;
   }
-  .report-disclaimer {
-    font-size: 11px;
-    color: #777;
-    line-height: 1.4;
-    margin: 0;
-    max-width: 460px;
+  .sec-title {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--c, #1A1A1A);
   }
-  .report-btn {
-    padding: 8px 20px;
-    background: #1A1A1A;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    font-size: 13px;
-    font-family: inherit;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.15s;
+  .sec-tag {
+    font-size: 9px; color: #aaa;
+    background: #f1f5f9; border-radius: 3px;
+    padding: 1px 5px;
   }
-  .report-btn:hover { background: #333; }
 
+  .sub-hdr {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: #aaa;
+    margin: 8px 0 4px; padding: 0;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 3px;
+  }
+
+  .inline-lever { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
+  .lever-label { font-size: 11px; font-weight: 500; color: #1A1A1A; }
+  .inline-lever select {
+    width: 100%; padding: 5px 8px; border: 1px solid #d1d5db;
+    border-radius: 5px; font-size: 12px; font-family: inherit;
+    background: #fff; cursor: pointer;
+  }
+
+  /* Report overlay */
   .report-overlay {
-    height: 100vh;
-    overflow-y: auto;
-    background: #F5F5F5;
-    padding: 20px;
-    box-sizing: border-box;
+    height: 100vh; overflow-y: auto; background: #F5F5F5;
+    padding: 20px; box-sizing: border-box;
   }
   .back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 16px;
-    padding: 6px 14px;
-    background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 13px;
+    display: inline-flex; align-items: center; gap: 6px; margin-bottom: 16px;
+    padding: 6px 14px; background: #fff; border: 1px solid #ccc;
+    border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13px;
   }
   .back-btn:hover { background: #f5f5f5; }
-
-  @media (max-width: 1100px) {
-    .layout { grid-template-columns: 1fr; height: auto; }
-    .sidebar { height: auto; overflow-y: visible; }
-    .sidebar-right { border-left: none; border-top: 1px solid #e5e7eb; }
-    .dashboard { height: auto; overflow: visible; }
-    .stats-strip { flex-wrap: wrap; }
-    .sankey-area { flex: none; }
-  }
 </style>
