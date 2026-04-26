@@ -162,6 +162,15 @@
                   <span class="hs-diff hs-muted">{(rules.federal.surtaxes.niit.rate * 100).toFixed(1)}% on invest.</span>
                 </div>
               {/if}
+              <!-- SE Tax -->
+              {#if result.seTax > 0}
+                <div class="hs-sep"></div>
+                <div class="hs">
+                  <span class="hs-lbl">SE Tax (est.)</span>
+                  <span class="hs-val hs-red">~${Math.round(result.seTax).toLocaleString()}</span>
+                  <span class="hs-diff hs-muted">not in totals</span>
+                </div>
+              {/if}
               {#if result.federalWithheld > 0}
                 {@const fo = result.federalOwed}
                 <div class="hs-sep"></div>
@@ -305,7 +314,7 @@
   .page {
     display: grid;
     grid-template-columns: 280px 1fr;
-    grid-template-rows: 40px 1fr;
+    grid-template-rows: 50px 1fr;
     height: 100vh;
     overflow: hidden;
   }
@@ -318,7 +327,8 @@
     align-items: center;
     gap: 16px;
     padding: 0 16px;
-    height: 40px;
+    height: 50px;
+    padding-top: 2px;
     background: #EFEFEF;
     color: #1A1A1A;
     border-bottom: 1px solid #D8D8D8;

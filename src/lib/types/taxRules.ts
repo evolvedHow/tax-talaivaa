@@ -184,6 +184,7 @@ export interface TaxResult {
   effectiveFederalRate: number;
   effectiveTotalRate: number;
   marginalRate: number;
+  seTax: number;        // self-employment tax on business income (not in totalTax)
   // Withholding vs. liability
   federalWithheld: number;
   stateWithheld: number;

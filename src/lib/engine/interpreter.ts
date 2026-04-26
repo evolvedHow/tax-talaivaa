@@ -238,11 +238,8 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
   if (hasAmtTrigger) {
     warnings.push('AMT may apply — consult a tax professional.');
   }
-  if (businessIncome > 0) {
-    const seTax = Math.round(businessIncome * 0.9235 * 0.153);
-    warnings.push(`SE tax on business income: ~$${seTax.toLocaleString()} (not included in totals above — add to your actual liability).`);
-  }
-  // NIIT is surfaced as a header stat, not a warning overlay
+  // SE tax and NIIT are surfaced as header stats, not warning overlays
+  const seTax = businessIncome > 0 ? Math.round(businessIncome * 0.9235 * 0.153) : 0;
 
   // ── State Tax ──────────────────────────────────────────────────────────────
   const stateCode = (scenario['state'] as string) ?? 'none';
@@ -311,6 +308,7 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
     effectiveFederalRate,
     effectiveTotalRate,
     marginalRate: mr,
+    seTax,
     federalWithheld,
     stateWithheld,
     federalOwed,
