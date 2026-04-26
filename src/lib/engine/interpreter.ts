@@ -319,14 +319,18 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
 // ─── Optimization Suggestions ─────────────────────────────────────────────────
 
 export interface Suggestion {
-  text: string;
+  action: string;   // short label, e.g. "Max Your IRA"
+  text: string;     // one-sentence explanation
+  saving: number;   // estimated dollar saving — 0 = informational
 }
 
 export function generateSuggestions(rules: TaxRules, scenario: ScenarioInputs, result: TaxResult): Suggestion[] {
   const suggestions: Suggestion[] = [];
   const fs = getFilingStatus(scenario);
+  const bd = result.deductionBreakdown;
+  const stdDed = result.standardDeduction;
 
-  // IRA headroom
+  // ── IRA headroom ─────────────────────────────────────────────────────────
   const age = Number(scenario['age'] ?? 0);
   const iraRules = rules.federal.ira;
   const iraLimit = age >= 50 ? iraRules.limit_50_plus : iraRules.limit;
@@ -335,51 +339,92 @@ export function generateSuggestions(rules: TaxRules, scenario: ScenarioInputs, r
   if (iraHeadroom > 0 && result.marginalRate > 0) {
     const saving = Math.round(iraHeadroom * result.marginalRate);
     suggestions.push({
-      text: `Maxing out your IRA (add $${iraHeadroom.toLocaleString()}) could save ~$${saving.toLocaleString()} in federal tax at your ${(result.marginalRate * 100).toFixed(0)}% marginal rate.`,
+      action: 'Max Your IRA',
+      saving,
+      text: `Add $${iraHeadroom.toLocaleString()} more to your traditional IRA to save ~$${saving.toLocaleString()} at your ${(result.marginalRate * 100).toFixed(0)}% rate.`,
     });
   }
 
-  // Itemization delta
-  const bd = result.deductionBreakdown;
-  const stdDed = rules.federal.standard_deduction[fs] ?? 0;
-  if (result.deductionType === 'standard' && bd.total_itemized > 0) {
-    const diff = stdDed - bd.total_itemized;
-    if (diff > 0) {
+  // ── Bracket drop — if top bracket income is small, it's worth shifting ───
+  const topBracket = result.federalBracketBreakdown[result.federalBracketBreakdown.length - 1];
+  const prevBracket = result.federalBracketBreakdown[result.federalBracketBreakdown.length - 2];
+  if (topBracket && prevBracket && topBracket.income > 0 && topBracket.income <= 25000) {
+    const rateDiff = topBracket.rate - prevBracket.rate;
+    const saving = Math.round(topBracket.income * rateDiff);
+    suggestions.push({
+      action: 'Drop a Tax Bracket',
+      saving,
+      text: `Only $${topBracket.income.toLocaleString()} sits in your top ${(topBracket.rate * 100).toFixed(0)}% bracket. Shift it via pre-tax contributions to save ~$${saving.toLocaleString()} — the ${(rateDiff * 100).toFixed(0)}pt rate difference makes this worthwhile.`,
+    });
+  }
+
+  // ── Itemization tipping point ─────────────────────────────────────────────
+  const itemized = bd.total_itemized ?? 0;
+  if (result.deductionType === 'standard') {
+    const gap = stdDed - itemized;
+    if (gap > 0 && gap < stdDed * 0.5 && itemized > 0) {
+      const saving = Math.round(gap * result.marginalRate);
       suggestions.push({
-        text: `Itemizing would save $${Math.round(diff * result.marginalRate).toLocaleString()} if you increase deductible expenses by $${Math.round(diff).toLocaleString()}.`,
+        action: 'Tip Into Itemizing',
+        saving,
+        text: `You're $${Math.round(gap).toLocaleString()} short of beating your $${stdDed.toLocaleString()} standard deduction. Bundle charitable gifts or prepay deductibles to unlock ~$${saving.toLocaleString()} in savings.`,
       });
     }
-  } else if (result.deductionType === 'itemized') {
-    const saving = Math.round((bd.total_itemized - stdDed) * result.marginalRate);
-    suggestions.push({
-      text: `Itemizing saves you $${saving.toLocaleString()} over the standard deduction of $${stdDed.toLocaleString()}.`,
-    });
+  } else {
+    const extra = itemized - stdDed;
+    const saving = Math.round(extra * result.marginalRate);
+    if (saving > 0) {
+      suggestions.push({
+        action: 'Itemizing Wins',
+        saving,
+        text: `Your itemized deductions beat the standard deduction by $${extra.toLocaleString()}, saving $${saving.toLocaleString()} in federal tax. Look for more deductible expenses to widen the gap.`,
+      });
+    }
   }
 
-  // Capital gains tier
-  const cgBrackets = (rules.federal.capital_gains[fs] ?? []).sort((a, b) => a.floor - b.floor);
+  // ── Capital gains tier — stay in current rate or manage headroom ──────────
+  const cgBrackets = [...(rules.federal.capital_gains[fs] ?? [])].sort((a, b) => a.floor - b.floor);
   const currentCgRate = result.capitalGainsBracketBreakdown[result.capitalGainsBracketBreakdown.length - 1]?.rate ?? 0;
   for (const b of cgBrackets) {
     if (b.rate > currentCgRate && b.floor > result.magi) {
       const headroom = b.floor - result.magi;
-      suggestions.push({
-        text: `You are $${Math.round(headroom).toLocaleString()} below the ${(b.rate * 100).toFixed(0)}% capital gains tier — consider harvesting gains up to that threshold.`,
-      });
+      if (headroom <= 40000) {
+        const saving = Math.round(Math.min(headroom, Number(scenario['capital_gains'] ?? 0) + Number(scenario['qualified_dividends'] ?? 0)) * (b.rate - currentCgRate));
+        suggestions.push({
+          action: 'CG Rate Headroom',
+          saving,
+          text: `$${Math.round(headroom).toLocaleString()} before the ${(b.rate * 100).toFixed(0)}% capital gains rate kicks in. Harvest losses or defer income to stay in the ${(currentCgRate * 100).toFixed(0)}% tier.`,
+        });
+      }
       break;
     }
   }
 
-  // NIIT headroom
+  // ── NIIT — already paying it or dangerously close ─────────────────────────
   const niitRules = rules.federal.surtaxes.niit;
   const niitThreshold = niitRules.threshold[fs] ?? Infinity;
-  if (!result.surtaxes['niit'] && isFinite(niitThreshold)) {
+  const niitPaid = result.surtaxes['niit'] ?? 0;
+  if (niitPaid > 0) {
+    suggestions.push({
+      action: 'Reduce NIIT',
+      saving: Math.round(niitPaid),
+      text: `You owe $${Math.round(niitPaid).toLocaleString()} in NIIT. Tax-exempt bonds, deferring investment income, or increasing deductions to bring MAGI under $${niitThreshold.toLocaleString()} can eliminate it.`,
+    });
+  } else if (isFinite(niitThreshold)) {
     const headroom = niitThreshold - result.magi;
-    if (headroom > 0) {
+    if (headroom > 0 && headroom < 25000) {
+      const investIncome = Number(scenario['investment_income'] ?? 0) + Number(scenario['capital_gains'] ?? 0)
+                         + Number(scenario['qualified_dividends'] ?? 0) + Number(scenario['rental_income'] ?? 0);
+      const saving = Math.round(Math.min(investIncome, headroom) * niitRules.rate);
       suggestions.push({
-        text: `Your MAGI is $${Math.round(headroom).toLocaleString()} below the NIIT threshold — you have that much investment income headroom before the ${(niitRules.rate * 100).toFixed(1)}% surtax applies.`,
+        action: 'Watch NIIT Threshold',
+        saving,
+        text: `MAGI is $${Math.round(headroom).toLocaleString()} from triggering NIIT. A modest income shift or extra deduction keeps you clear and saves up to $${saving.toLocaleString()}.`,
       });
     }
   }
 
+  // Sort by estimated dollar saving — highest ROI first
+  suggestions.sort((a, b) => b.saving - a.saving);
   return suggestions;
 }

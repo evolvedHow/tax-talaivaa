@@ -10,6 +10,7 @@
   import ReportView from './lib/components/ReportView.svelte';
   import Sankey from './lib/components/Sankey.svelte';
   import BudgetBar from './lib/components/BudgetBar.svelte';
+  import TaxTips from './lib/components/TaxTips.svelte';
 
   const CONFIGS = [
     { id: 'tax-2025', label: '2025' },
@@ -194,9 +195,8 @@
             {/if}
           </div>
           <div class="hdr-right">
-            <span class="disclaimer">⚠ Estimates only — not tax advice</span>
             {#if result}
-              <button class="report-btn" on:click={() => showReport = true}>Report →</button>
+              <button class="report-btn" on:click={() => showReport = true}>Full Report →</button>
             {/if}
           </div>
         </header>
@@ -212,8 +212,16 @@
               <Sankey {result} {scenario} />
             </div>
 
+            <div class="chart-card tips-card">
+              <TaxTips {rules} {result} {scenario} />
+            </div>
+
             <div class="chart-card budget-card">
               <BudgetBar federalTax={result.federalTax} taxYear={rules.meta.tax_year} />
+            </div>
+
+            <div class="chart-footer">
+              ⚠ Estimates only — not tax advice. Numbers are approximations for scenario planning; consult a tax professional for filing.
             </div>
           {:else}
             <div class="loading">Computing…</div>
@@ -367,7 +375,6 @@
   .hs-sep { width: 1px; height: 26px; background: #D0D0D0; flex-shrink: 0; }
 
   .hdr-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-  .disclaimer { font-size: 10px; color: #9E9E9E; white-space: nowrap; }
   .report-btn {
     padding: 4px 12px; background: #1976D2; color: #fff;
     border: none; border-radius: 4px; font-size: 12px;
@@ -409,7 +416,16 @@
     min-height: 0;
   }
 
+  .tips-card { flex-shrink: 0; }
   .budget-card { flex-shrink: 0; }
+
+  .chart-footer {
+    flex-shrink: 0;
+    font-size: 10px;
+    color: #BDBDBD;
+    text-align: right;
+    padding: 2px 2px 4px;
+  }
 
   /* ── Sidebar (input panel) ───────────────────────────────────────────────── */
   .input-panel {

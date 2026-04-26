@@ -3,18 +3,23 @@
   export let taxYear: number = 2025;
 
   // Approximate FY2024/25 federal budget allocation (CBO/OMB estimates)
-  const SLICES = [
+  const MANDATORY = [
     { label: 'Social Security',  pct: 0.227, color: '#3b82f6' },
     { label: 'Medicare',         pct: 0.136, color: '#06b6d4' },
-    { label: 'Medicaid',         pct: 0.096, color: '#67e8f9' },
-    { label: 'Defense',          pct: 0.136, color: '#ef4444' },
-    { label: 'Interest on Debt', pct: 0.139, color: '#f97316' },
+    { label: 'Medicaid',         pct: 0.096, color: '#22d3ee' },
     { label: 'Income Security',  pct: 0.122, color: '#8b5cf6' },
     { label: 'Veterans',         pct: 0.050, color: '#10b981' },
+    { label: 'Debt Interest',    pct: 0.139, color: '#f97316' },
+  ];
+  const DISCRETIONARY = [
+    { label: 'Defense',          pct: 0.136, color: '#ef4444' },
     { label: 'Education',        pct: 0.022, color: '#fbbf24' },
     { label: 'Transportation',   pct: 0.020, color: '#a78bfa' },
-    { label: 'Other Programs',   pct: 0.052, color: '#94a3b8' },
+    { label: 'Other',            pct: 0.052, color: '#94a3b8' },
   ];
+  const SLICES = [...MANDATORY, ...DISCRETIONARY];
+  const MANDATORY_PCT = MANDATORY.reduce((s, x) => s + x.pct, 0);
+  const DISCRETIONARY_PCT = DISCRETIONARY.reduce((s, x) => s + x.pct, 0);
 
   let hoveredSlice: typeof SLICES[0] | null = null;
   let tipX = 0;
@@ -42,13 +47,32 @@
     <span class="bar-sub">≈ FY{taxYear} federal budget allocation · hover to see your dollars</span>
   </div>
 
-  <!-- Stacked bar -->
+  <!-- Group labels above bar -->
+  <div class="group-labels">
+    <div class="g-label" style="width:{MANDATORY_PCT * 100}%">
+      <span class="g-badge g-mandatory">Mandatory · {(MANDATORY_PCT * 100).toFixed(0)}%</span>
+    </div>
+    <div class="g-label" style="width:{DISCRETIONARY_PCT * 100}%">
+      <span class="g-badge g-discretionary">Discretionary · {(DISCRETIONARY_PCT * 100).toFixed(0)}%</span>
+    </div>
+  </div>
+
+  <!-- Stacked bar with divider between groups -->
   <div class="bar-container" bind:this={barEl}>
     <div class="stacked-bar">
-      {#each SLICES as s}
+      {#each MANDATORY as s}
         <!-- svelte-ignore a11y-no-static-element-interactions -->
-        <div
-          class="seg"
+        <div class="seg"
+          style="width:{s.pct * 100}%; background:{s.color}; opacity:{hoveredSlice && hoveredSlice !== s ? 0.55 : 1}"
+          on:mouseover={(e) => onOver(e, s)}
+          on:mousemove={onMove}
+          on:mouseout={onOut}
+        >{#if s.pct >= 0.06}<span class="seg-label">{(s.pct * 100).toFixed(0)}%</span>{/if}</div>
+      {/each}
+      <div class="group-divider"></div>
+      {#each DISCRETIONARY as s}
+        <!-- svelte-ignore a11y-no-static-element-interactions -->
+        <div class="seg"
           style="width:{s.pct * 100}%; background:{s.color}; opacity:{hoveredSlice && hoveredSlice !== s ? 0.55 : 1}"
           on:mouseover={(e) => onOver(e, s)}
           on:mousemove={onMove}
@@ -66,18 +90,33 @@
     {/if}
   </div>
 
-  <!-- Legend: 5-across, 2 rows -->
-  <div class="legend">
-    {#each SLICES as s}
-      <div class="l-item">
-        <span class="l-dot" style="background:{s.color}"></span>
-        <span class="l-label">{s.label}</span>
-        <span class="l-amt">${Math.round(federalTax * s.pct).toLocaleString()}</span>
+  <!-- Two-group legend -->
+  <div class="legend-groups">
+    <div class="legend-group">
+      <span class="legend-group-hdr g-mandatory-txt">Mandatory</span>
+      <div class="legend">
+        {#each MANDATORY as s}
+          <div class="l-item">
+            <span class="l-dot" style="background:{s.color}"></span>
+            <span class="l-label">{s.label}</span>
+            <span class="l-amt">${Math.round(federalTax * s.pct).toLocaleString()}</span>
+          </div>
+        {/each}
       </div>
-    {/each}
+    </div>
+    <div class="legend-group">
+      <span class="legend-group-hdr g-discretionary-txt">Discretionary</span>
+      <div class="legend">
+        {#each DISCRETIONARY as s}
+          <div class="l-item">
+            <span class="l-dot" style="background:{s.color}"></span>
+            <span class="l-label">{s.label}</span>
+            <span class="l-amt">${Math.round(federalTax * s.pct).toLocaleString()}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
   </div>
-
-  <p class="note">Proportions are approximate; based on overall federal spending, not income tax specifically.</p>
 </div>
 
 <style>
@@ -127,15 +166,41 @@
     box-shadow: 0 4px 14px rgba(0,0,0,0.25);
   }
 
+  /* Group labels row above the bar */
+  .group-labels { display: flex; width: 100%; }
+  .g-label { display: flex; align-items: center; }
+  .g-badge {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; padding: 1px 6px; border-radius: 3px;
+    white-space: nowrap;
+  }
+  .g-mandatory    { background: #E3F2FD; color: #1565C0; }
+  .g-discretionary { background: #FEE2E2; color: #991B1B; }
+
+  /* Divider between mandatory and discretionary in the bar */
+  .group-divider { width: 3px; background: #fff; flex-shrink: 0; }
+
+  /* Legend grouped by category */
+  .legend-groups {
+    display: flex;
+    gap: 16px;
+  }
+  .legend-group { flex: 1; min-width: 0; }
+  .legend-group-hdr {
+    display: block; font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+  .g-mandatory-txt    { color: #1565C0; }
+  .g-discretionary-txt { color: #991B1B; }
+
   .legend {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 4px 12px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px 10px;
   }
   .l-item  { display: flex; align-items: center; gap: 5px; min-width: 0; }
-  .l-dot   { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-  .l-label { font-size: 11px; color: #444; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .l-amt   { font-size: 11px; font-weight: 700; color: #1A1A1A; white-space: nowrap; }
-
-  .note { font-size: 10px; color: #999; margin: 0; }
+  .l-dot   { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+  .l-label { font-size: 10px; color: #444; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .l-amt   { font-size: 10px; font-weight: 700; color: #1A1A1A; white-space: nowrap; }
 </style>
