@@ -169,6 +169,7 @@ export interface TaxResult {
   taxableIncome: number;
   deductionType: 'standard' | 'itemized';
   deductionAmount: number;
+  standardDeduction: number;
   deductionBreakdown: DeductionBreakdown;
   federalTax: number;
   federalBracketBreakdown: BracketBreakdown[];

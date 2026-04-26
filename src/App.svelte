@@ -116,6 +116,10 @@
           </div>
           <div class="hdr-stats">
             {#if result}
+              {@const niit = result.surtaxes['niit'] ?? 0}
+              {@const itemizedAmt = result.deductionBreakdown.total_itemized ?? 0}
+              {@const dedDiff = itemizedAmt - result.standardDeduction}
+
               <div class="hs"><span class="hs-lbl">Gross</span><span class="hs-val">${Math.round(result.grossIncome).toLocaleString()}</span></div>
               <div class="hs-sep"></div>
               <div class="hs"><span class="hs-lbl">Total Tax</span><span class="hs-val hs-red">${Math.round(result.totalTax).toLocaleString()}</span></div>
@@ -136,6 +140,28 @@
               <div class="hs"><span class="hs-lbl">Marginal</span><span class="hs-val">{(result.marginalRate * 100).toFixed(0)}%</span></div>
               <div class="hs-sep"></div>
               <div class="hs"><span class="hs-lbl">Take-home</span><span class="hs-val hs-green">${Math.round(result.grossIncome - result.totalTax).toLocaleString()}</span></div>
+              <div class="hs-sep"></div>
+              <!-- Deduction type + diff -->
+              <div class="hs">
+                <span class="hs-lbl">{result.deductionType === 'itemized' ? 'Itemizing' : 'Std. Ded.'}</span>
+                <span class="hs-val" class:hs-green={result.deductionType === 'itemized'}>
+                  ${Math.round(result.deductionType === 'itemized' ? itemizedAmt : result.standardDeduction).toLocaleString()}
+                </span>
+                {#if dedDiff > 0}
+                  <span class="hs-diff hs-green">+${Math.round(dedDiff).toLocaleString()} vs std.</span>
+                {:else if dedDiff < 0}
+                  <span class="hs-diff hs-muted">${Math.round(-dedDiff).toLocaleString()} below std.</span>
+                {/if}
+              </div>
+              <!-- NIIT -->
+              {#if niit > 0}
+                <div class="hs-sep"></div>
+                <div class="hs">
+                  <span class="hs-lbl">NIIT</span>
+                  <span class="hs-val hs-red">${Math.round(niit).toLocaleString()}</span>
+                  <span class="hs-diff hs-muted">{(rules.federal.surtaxes.niit.rate * 100).toFixed(1)}% on invest.</span>
+                </div>
+              {/if}
               {#if result.federalWithheld > 0}
                 {@const fo = result.federalOwed}
                 <div class="hs-sep"></div>
@@ -293,20 +319,22 @@
     gap: 16px;
     padding: 0 16px;
     height: 40px;
-    background: #1976D2;
-    color: #fff;
+    background: #EFEFEF;
+    color: #1A1A1A;
+    border-bottom: 1px solid #D8D8D8;
     z-index: 10;
   }
   .hdr-left { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-  .app-title { font-size: 15px; font-weight: 700; letter-spacing: 0.04em; white-space: nowrap; }
+  .app-title { font-size: 15px; font-weight: 700; letter-spacing: 0.04em;
+               white-space: nowrap; color: #1565C0; }
 
   .hdr-field { display: flex; align-items: center; gap: 5px; }
-  .hdr-lbl { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.7);
+  .hdr-lbl { font-size: 10px; font-weight: 600; color: #757575;
              text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
   .hdr-select {
-    padding: 3px 7px; border: 1px solid rgba(255,255,255,0.3); border-radius: 5px;
+    padding: 3px 7px; border: 1px solid #C0C4CC; border-radius: 5px;
     font-size: 12px; font-family: inherit;
-    background: rgba(255,255,255,0.15); color: #fff; cursor: pointer;
+    background: #fff; color: #1A1A1A; cursor: pointer;
   }
 
   .hdr-stats {
@@ -320,21 +348,23 @@
   }
   .hs { display: flex; flex-direction: column; align-items: center; padding: 0 10px; flex-shrink: 0; }
   .hs-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase;
-            color: rgba(255,255,255,0.7); letter-spacing: 0.05em; white-space: nowrap; }
-  .hs-val { font-size: 14px; font-weight: 700; color: #fff; white-space: nowrap; }
-  .hs-red   { color: #ffcdd2; }
-  .hs-green { color: #c8e6c9; }
-  .hs-sep { width: 1px; height: 22px; background: rgba(255,255,255,0.2); flex-shrink: 0; }
+            color: #757575; letter-spacing: 0.05em; white-space: nowrap; }
+  .hs-val { font-size: 13px; font-weight: 700; color: #1A1A1A; white-space: nowrap; }
+  .hs-diff { font-size: 9px; white-space: nowrap; font-weight: 500; }
+  .hs-red   { color: #C62828; }
+  .hs-green { color: #2E7D32; }
+  .hs-muted { color: #9E9E9E; }
+  .hs-sep { width: 1px; height: 26px; background: #D0D0D0; flex-shrink: 0; }
 
   .hdr-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-  .disclaimer { font-size: 10px; color: rgba(255,255,255,0.6); white-space: nowrap; }
+  .disclaimer { font-size: 10px; color: #9E9E9E; white-space: nowrap; }
   .report-btn {
-    padding: 4px 12px; background: rgba(255,255,255,0.2); color: #fff;
-    border: 1px solid rgba(255,255,255,0.4); border-radius: 4px; font-size: 12px;
+    padding: 4px 12px; background: #1976D2; color: #fff;
+    border: none; border-radius: 4px; font-size: 12px;
     font-family: inherit; cursor: pointer; font-weight: 500;
     white-space: nowrap; transition: background 0.15s;
   }
-  .report-btn:hover { background: rgba(255,255,255,0.3); }
+  .report-btn:hover { background: #1565C0; }
 
   /* ── Chart area ──────────────────────────────────────────────────────────── */
   .chart-area {

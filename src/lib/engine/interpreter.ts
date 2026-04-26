@@ -242,9 +242,7 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
     const seTax = Math.round(businessIncome * 0.9235 * 0.153);
     warnings.push(`SE tax on business income: ~$${seTax.toLocaleString()} (not included in totals above — add to your actual liability).`);
   }
-  if (surtaxes['niit']) {
-    warnings.push(`NIIT applies: $${Math.round(surtaxes['niit']).toLocaleString()} at ${(niitRules.rate * 100).toFixed(1)}%`);
-  }
+  // NIIT is surfaced as a header stat, not a warning overlay
 
   // ── State Tax ──────────────────────────────────────────────────────────────
   const stateCode = (scenario['state'] as string) ?? 'none';
@@ -298,6 +296,7 @@ export function interpret(rules: TaxRules, scenario: ScenarioInputs): TaxResult 
     taxableIncome,
     deductionType,
     deductionAmount,
+    standardDeduction,
     deductionBreakdown,
     federalTax: netFederalTax,
     federalBracketBreakdown,
