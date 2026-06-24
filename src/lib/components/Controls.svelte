@@ -238,4 +238,19 @@
   input[type="checkbox"]:checked ~ .toggle-slider { background: #2563eb; }
   input[type="checkbox"]:checked ~ .toggle-slider::after { transform: translateX(17px); }
   .toggle-text { font-size: 13px; color: #555; }
+
+  @media (max-width: 599px) {
+    .lever-label { font-size: 12px; }
+    .slider { height: 22px; }
+    .direct-input, .controls.compact .direct-input {
+      width: 72px;
+      padding: 6px 8px;
+      font-size: 14px;
+    }
+    .number-input, select {
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+    .slider-bounds { padding-right: 80px; }
+  }
 </style>

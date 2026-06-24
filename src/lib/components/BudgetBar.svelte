@@ -203,4 +203,13 @@
   .l-dot   { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
   .l-label { font-size: 10px; color: #444; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .l-amt   { font-size: 10px; font-weight: 700; color: #1A1A1A; white-space: nowrap; }
+
+  @media (max-width: 599px) {
+    .legend-groups { flex-direction: column; gap: 10px; }
+    .legend { grid-template-columns: repeat(2, 1fr); }
+    .bar-title { font-size: 12px; }
+    .bar-sub { font-size: 10px; }
+    .stacked-bar { height: 28px; }
+    .g-badge { font-size: 8px; padding: 1px 4px; }
+  }
 </style>

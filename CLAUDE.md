@@ -9,8 +9,7 @@ npm install          # install dependencies
 npm run dev          # local dev server → http://localhost:5173
 npm run build        # production build → /dist
 npm run check        # svelte-check type checking
-VITE_BASE=/tax-talaivaa/ npm run build   # GitHub Pages subdirectory build
-npm run deploy       # build + push to gh-pages branch
+npm run deploy       # build with /tax-talaivaa/ base + push to gh-pages branch
 ```
 
 ## Architecture

@@ -386,4 +386,15 @@
   }
 
   .empty { font-size: 12px; color: #bbb; margin: 8px 0; }
+
+  @media (max-width: 599px) {
+    .flow-title { font-size: 11px; }
+    .flow-sub { font-size: 9px; }
+    .bar-row { height: 44px; }
+    .lbl { font-size: 9px; }
+    .amt { font-size: 8px; }
+    .dst-lbl { font-size: 9px; }
+    .summary-row { font-size: 10px; gap: 4px; }
+    .tip { font-size: 10px; padding: 6px 9px; }
+  }
 </style>
