@@ -352,10 +352,12 @@ levers:
       - none
       - NY
       - GA
+      - IL
     help: >
       Adds state income tax to your total liability. New York uses progressive
-      brackets (4%–8.82%); Georgia uses a flat 5.39% rate for 2025. Select
-      "none" for states with no income tax (FL, TX, WA, etc.).
+      brackets (4%–8.82%); Georgia uses a flat 5.39% rate for 2025; Illinois
+      uses a flat 4.95% rate. Select "none" for states with no income tax (FL,
+      TX, WA, etc.).
 
   - id: iso_options_exercised
     label: Exercised ISO Stock Options (AMT trigger)
@@ -459,3 +461,7 @@ states:
   GA:
     note: "Georgia 2025 flat income tax rate — source: GA Dept of Revenue"
     flat_rate: 0.0539
+
+  IL:
+    note: "Illinois 2025 flat income tax rate — source: IL Income Tax Act (35 ILCS 5/201)"
+    flat_rate: 0.0495

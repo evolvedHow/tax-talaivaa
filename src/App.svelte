@@ -11,6 +11,17 @@
   import Sankey from './lib/components/Sankey.svelte';
   import BudgetBar from './lib/components/BudgetBar.svelte';
   import TaxTips from './lib/components/TaxTips.svelte';
+  import InfoIcon from './lib/components/InfoIcon.svelte';
+
+  // ── What goes in each input bucket (used for section tooltips) ────────────
+  const SEC_HELP: Record<string, string> = {
+    income: 'All sources of income that go on your tax return. Wages and bonuses are taxed at ordinary rates (10–37%). Long-term capital gains and qualified dividends get lower rates (0/15/20%). Each slider is separate so you can model different income mix scenarios.',
+    retirement: 'Pre-tax retirement contributions reduce your adjusted gross income (AGI) dollar-for-dollar. The IRA deduction may be limited if you or your spouse are covered by a workplace plan.',
+    itemized: 'These only help if their total exceeds your standard deduction ($15,000 single / $30,000 MFJ for 2025). SALT is capped at $10,000. The app automatically compares itemized vs. standard and uses whichever is better.',
+    family: 'Personal details that drive credits and special deductions. Each qualifying child under 17 earns a $2,000 Child Tax Credit. Age determines catch-up IRA contributions (50+) and senior standard deduction bonus (65+).',
+    advanced: 'Most people can ignore these. They trigger Alternative Minimum Tax (AMT) calculations — only relevant if you\'ve exercised stock options or have specific tax preference items.',
+    settings: 'Filing status determines your bracket thresholds and deduction sizes. State selection adds state income tax. Withholdings let the app calculate your refund or amount owed.',
+  };
 
   const CONFIGS = [
     { id: 'tax-2025', label: '2025' },
@@ -19,16 +30,21 @@
 
   let selectedConfig = 'tax-2025';
   let showReport = false;
-  let activeTab: 'simulate' | 'charts' = 'simulate';
 
-  // ── Input panel section definitions (by tax treatment) ────────────────────
-  const S_ORDINARY     = ['wages_income','bonus','investment_income','short_term_capital_gains','business_income'];
-  const S_PREFERENTIAL = ['capital_gains','qualified_dividends'];
-  const S_PASSIVE      = ['rental_income'];
-  const S_ABOVE_LINE   = ['ira_contribution','has_workplace_plan'];
-  const S_ITEMIZED     = ['state_local_tax','mortgage_interest','charitable_contributions'];
-  const S_CREDITS      = ['num_children','age'];
-  const S_SETTINGS     = ['filing_status','state','federal_withheld','state_withheld'];
+  // ── Mobile drawer state ───────────────────────────────────────────────────
+  let drawerExpanded = false;
+  function toggleDrawer() { drawerExpanded = !drawerExpanded; }
+
+  // ── Input panel section definitions ───────────────────────────────────────
+  const S_WAGES     = ['wages_income','bonus'];
+  const S_INVEST    = ['investment_income','short_term_capital_gains','business_income'];
+  const S_LTCG      = ['capital_gains','qualified_dividends'];
+  const S_PASSIVE   = ['rental_income'];
+  const S_RETIRE    = ['ira_contribution','has_workplace_plan'];
+  const S_ITEMIZED  = ['state_local_tax','mortgage_interest','charitable_contributions'];
+  const S_FAMILY    = ['num_children','age'];
+  const S_ADVANCED  = ['iso_options_exercised','has_amt_preference_items'];
+  const S_SETTINGS  = ['filing_status','state','federal_withheld','state_withheld'];
 
   function taxFreedomDate(totalTax: number, grossIncome: number, taxYear: number): string {
     if (grossIncome <= 0) return '—';
@@ -206,77 +222,124 @@
           </div>
         {/if}
 
-        <!-- ── Tabs (mobile only) ───────────────────────────────────────────── -->
-        <div class="tab-bar">
-          <button
-            class="tab-btn"
-            class:active={activeTab === 'simulate'}
-            on:click={() => activeTab = 'simulate'}
-          >Simulate</button>
-          <button
-            class="tab-btn"
-            class:active={activeTab === 'charts'}
-            on:click={() => activeTab = 'charts'}
-          >Charts</button>
-        </div>
+        <!-- ── Tabs removed — mobile uses bottom drawer instead ───────────── -->
 
         <!-- ── Main content area ────────────────────────────────────────────── -->
         <div class="content">
 
-          <!-- Controls / Simulate panel -->
-          <section class="panel panel-controls" class:hidden-mobile={activeTab !== 'simulate'}>
-            <!-- ORDINARY INCOME -->
+          <!-- Controls / Simulate panel (desktop sidebar) -->
+          <section class="panel panel-controls" class:hidden-mobile={true}>
+            <!-- YOUR INCOME -->
             <div class="sec" style="--c:#3b82f6">
               <div class="sec-hdr">
-                <span class="sec-title">Ordinary Income</span>
-                <span class="sec-tag">brackets 10–37%</span>
+                <span class="sec-title">Your Income</span>
+                <span class="sec-tag">10–37% / 0–20%</span>
+                <InfoIcon text={SEC_HELP.income} position="bottom" />
               </div>
-              <Controls levers={rules.levers.filter(l => S_ORDINARY.includes(l.id))} {scenario} compact={true} />
+              <p class="sub-hdr">Wages &amp; Salary</p>
+              <Controls
+                levers={rules.levers.filter(l => S_WAGES.includes(l.id))}
+                {scenario} compact={true} showHelp={true}
+                descriptions={{ wages_income: 'Your W-2 salary (Box 1)', bonus: 'Bonuses, commissions, other ordinary income' }}
+              />
+              <p class="sub-hdr">Investment &amp; Business</p>
+              <Controls
+                levers={rules.levers.filter(l => S_INVEST.includes(l.id))}
+                {scenario} compact={true} showHelp={true}
+                descriptions={{ investment_income: 'Bank interest, non-qualified dividends', short_term_capital_gains: 'Assets held ≤ 1 year', business_income: 'Schedule C / self-employment profit' }}
+              />
+              <p class="sub-hdr">Preferential Rates (0 / 15 / 20%)</p>
+              <Controls
+                levers={rules.levers.filter(l => S_LTCG.includes(l.id))}
+                {scenario} compact={true} showHelp={true}
+                descriptions={{ capital_gains: 'Assets held > 1 year', qualified_dividends: 'US & qualifying foreign corp dividends' }}
+              />
+              <p class="sub-hdr">Passive</p>
+              <Controls
+                levers={rules.levers.filter(l => S_PASSIVE.includes(l.id))}
+                {scenario} compact={true} showHelp={true}
+                descriptions={{ rental_income: 'Net rental income after expenses' }}
+              />
             </div>
 
-            <!-- CAPITAL & PREFERENTIAL -->
+            <!-- RETIREMENT SAVINGS -->
             <div class="sec" style="--c:#8b5cf6">
               <div class="sec-hdr">
-                <span class="sec-title">Capital &amp; Preferential</span>
-                <span class="sec-tag">0 / 15 / 20%</span>
+                <span class="sec-title">Retirement Savings</span>
+                <span class="sec-tag">reduces AGI</span>
+                <InfoIcon text={SEC_HELP.retirement} position="bottom" />
               </div>
-              <Controls levers={rules.levers.filter(l => S_PREFERENTIAL.includes(l.id))} {scenario} compact={true} />
+              <Controls
+                levers={rules.levers.filter(l => S_RETIRE.includes(l.id))}
+                {scenario} compact={true} showHelp={true}
+                marginalCalloutRate={result?.marginalRate ?? null}
+                descriptions={{ ira_contribution: 'Traditional IRA — reduces taxable income', has_workplace_plan: 'Affects IRA deduction phase-out' }}
+              />
             </div>
 
-            <!-- PASSIVE / INVESTMENT -->
-            <div class="sec" style="--c:#0d9488">
-              <div class="sec-hdr">
-                <span class="sec-title">Passive / Rental</span>
-                <span class="sec-tag">ordinary + NIIT</span>
-              </div>
-              <Controls levers={rules.levers.filter(l => S_PASSIVE.includes(l.id))} {scenario} compact={true} />
-            </div>
-
-            <!-- DEDUCTIONS -->
+            <!-- ITEMIZED DEDUCTIONS -->
             <div class="sec" style="--c:#16a34a">
               <div class="sec-hdr">
-                <span class="sec-title">Deductions</span>
+                <span class="sec-title">Itemized Deductions</span>
+                <InfoIcon text={SEC_HELP.itemized} position="bottom" />
               </div>
-              <p class="sub-hdr">Above the line</p>
-              <Controls levers={rules.levers.filter(l => S_ABOVE_LINE.includes(l.id))} {scenario} compact={true} />
-              <p class="sub-hdr">Itemized</p>
-              <Controls levers={rules.levers.filter(l => S_ITEMIZED.includes(l.id))} {scenario} compact={true} />
+              {#if result && result.standardDeduction > 0}
+                {@const itemizedAmtSec = result.deductionBreakdown.total_itemized ?? 0}
+                {@const stdDedSec = result.standardDeduction}
+                {@const isItemizing = result.deductionType === 'itemized'}
+                <div class="bundle-status" class:bundle-win={isItemizing}>
+                  {#if isItemizing}
+                    ✓ Itemizing — ${Math.round(itemizedAmtSec - stdDedSec).toLocaleString()} over the ${Math.round(stdDedSec).toLocaleString()} standard deduction
+                  {:else}
+                    Using standard deduction (${Math.round(stdDedSec).toLocaleString()}) — ${Math.round(stdDedSec - itemizedAmtSec).toLocaleString()} more itemized to switch
+                  {/if}
+                </div>
+              {/if}
+              <Controls
+                levers={rules.levers.filter(l => S_ITEMIZED.includes(l.id))}
+                {scenario} compact={true} showHelp={true}
+                marginalCalloutRate={result?.deductionType === 'itemized' ? result.marginalRate : null}
+                descriptions={{ state_local_tax: 'State income + property taxes (capped $10K)', mortgage_interest: 'Mortgage interest on debt up to $750K', charitable_contributions: 'Cash donations to 501(c)(3) orgs' }}
+              />
             </div>
 
-            <!-- CREDITS & PERSONAL -->
+            <!-- FAMILY & AGE -->
             <div class="sec" style="--c:#f59e0b">
               <div class="sec-hdr">
-                <span class="sec-title">Credits &amp; Personal</span>
+                <span class="sec-title">Family &amp; Age</span>
+                <InfoIcon text={SEC_HELP.family} position="bottom" />
               </div>
-              <Controls levers={rules.levers.filter(l => S_CREDITS.includes(l.id))} {scenario} compact={true} />
+              <Controls
+                levers={rules.levers.filter(l => S_FAMILY.includes(l.id))}
+                {scenario} compact={true} showHelp={true}
+                descriptions={{ num_children: 'Children under 17 → $2K credit each', age: '50+ → IRA catch-up; 65+ → senior bonus', over_65: 'Extra standard deduction (linked to age)' }}
+              />
             </div>
 
-            <!-- TAX SETTINGS -->
+            <!-- ADVANCED (AMT) -->
             <div class="sec" style="--c:#64748b">
               <div class="sec-hdr">
-                <span class="sec-title">Tax Settings</span>
+                <span class="sec-title">Advanced</span>
+                <span class="sec-tag">AMT</span>
+                <InfoIcon text={SEC_HELP.advanced} position="bottom" />
               </div>
-              <Controls levers={rules.levers.filter(l => S_SETTINGS.includes(l.id))} {scenario} compact={true} />
+              <Controls
+                levers={rules.levers.filter(l => S_ADVANCED.includes(l.id))}
+                {scenario} compact={true} showHelp={true}
+              />
+            </div>
+
+            <!-- FILING & STATE -->
+            <div class="sec" style="--c:#64748b">
+              <div class="sec-hdr">
+                <span class="sec-title">Filing &amp; State</span>
+                <InfoIcon text={SEC_HELP.settings} position="bottom" />
+              </div>
+              <Controls
+                levers={rules.levers.filter(l => S_SETTINGS.includes(l.id))}
+                {scenario} compact={true} showHelp={true}
+                descriptions={{ filing_status: 'Determines brackets & deduction sizes', state: 'Adds state income tax to your total', federal_withheld: 'W-2 Box 2 — shows refund or owed', state_withheld: 'W-2 Box 17 — shows state refund or owed' }}
+              />
               {#if rules.states[String(scenario.state ?? 'none')]?.sub_jurisdictions}
                 <div class="inline-lever">
                   <label class="lever-label" for="sub-j">Sub-Jurisdiction</label>
@@ -294,8 +357,8 @@
             </div>
           </section>
 
-          <!-- Charts panel -->
-          <section class="panel panel-charts" class:hidden-mobile={activeTab !== 'charts'}>
+          <!-- Charts panel (always visible; controls live in the desktop sidebar / mobile drawer) -->
+          <section class="panel panel-charts">
             {#if result}
               {#if result.warnings.length > 0}
                 <div class="warnings-row"><Overlays warnings={result.warnings} /></div>
@@ -321,6 +384,141 @@
             {/if}
           </section>
         </div>
+
+        <!-- ── Mobile bottom drawer (inputs) ─────────────────────────────────── -->
+        {#if result}
+          <div class="drawer-backdrop" class:open={drawerExpanded} on:click={toggleDrawer} />
+          <div class="drawer" class:expanded={drawerExpanded}>
+            <div class="drawer-handle" on:click={toggleDrawer} on:keydown={e => e.key === 'Enter' && toggleDrawer()} role="button" tabindex="0">
+              <span class="drawer-pill"></span>
+              <span class="drawer-hint">{drawerExpanded ? 'Collapse' : 'Adjust Inputs'}</span>
+            </div>
+            <div class="drawer-body">
+              <div class="drawer-scroll">
+                <!-- YOUR INCOME -->
+                <div class="sec" style="--c:#3b82f6">
+                  <div class="sec-hdr">
+                    <span class="sec-title">Your Income</span>
+                    <span class="sec-tag">10–37% / 0–20%</span>
+                  </div>
+                  <p class="sub-hdr">Wages &amp; Salary</p>
+                  <Controls
+                    levers={rules.levers.filter(l => S_WAGES.includes(l.id))}
+                    {scenario} compact={true} showHelp={true}
+                    descriptions={{ wages_income: 'Your W-2 salary (Box 1)', bonus: 'Bonuses, commissions, other ordinary income' }}
+                  />
+                  <p class="sub-hdr">Investment &amp; Business</p>
+                  <Controls
+                    levers={rules.levers.filter(l => S_INVEST.includes(l.id))}
+                    {scenario} compact={true} showHelp={true}
+                    descriptions={{ investment_income: 'Bank interest, non-qualified dividends', short_term_capital_gains: 'Assets held ≤ 1 year', business_income: 'Schedule C / self-employment profit' }}
+                  />
+                  <p class="sub-hdr">Preferential Rates (0 / 15 / 20%)</p>
+                  <Controls
+                    levers={rules.levers.filter(l => S_LTCG.includes(l.id))}
+                    {scenario} compact={true} showHelp={true}
+                    descriptions={{ capital_gains: 'Assets held > 1 year', qualified_dividends: 'US & qualifying foreign corp dividends' }}
+                  />
+                  <p class="sub-hdr">Passive</p>
+                  <Controls
+                    levers={rules.levers.filter(l => S_PASSIVE.includes(l.id))}
+                    {scenario} compact={true} showHelp={true}
+                    descriptions={{ rental_income: 'Net rental income after expenses' }}
+                  />
+                </div>
+
+                <!-- RETIREMENT SAVINGS -->
+                <div class="sec" style="--c:#8b5cf6">
+                  <div class="sec-hdr">
+                    <span class="sec-title">Retirement Savings</span>
+                    <span class="sec-tag">reduces AGI</span>
+                  </div>
+                  <Controls
+                    levers={rules.levers.filter(l => S_RETIRE.includes(l.id))}
+                    {scenario} compact={true} showHelp={true}
+                    marginalCalloutRate={result?.marginalRate ?? null}
+                    descriptions={{ ira_contribution: 'Traditional IRA — reduces taxable income', has_workplace_plan: 'Affects IRA deduction phase-out' }}
+                  />
+                </div>
+
+                <!-- ITEMIZED DEDUCTIONS -->
+                <div class="sec" style="--c:#16a34a">
+                  <div class="sec-hdr">
+                    <span class="sec-title">Itemized Deductions</span>
+                  </div>
+                  {#if result && result.standardDeduction > 0}
+                    {@const itemizedAmtSec = result.deductionBreakdown.total_itemized ?? 0}
+                    {@const stdDedSec = result.standardDeduction}
+                    {@const isItemizing = result.deductionType === 'itemized'}
+                    <div class="bundle-status" class:bundle-win={isItemizing}>
+                      {#if isItemizing}
+                        ✓ Itemizing — ${Math.round(itemizedAmtSec - stdDedSec).toLocaleString()} over standard
+                      {:else}
+                        Using standard deduction — ${Math.round(stdDedSec - itemizedAmtSec).toLocaleString()} more itemized to switch
+                      {/if}
+                    </div>
+                  {/if}
+                  <Controls
+                    levers={rules.levers.filter(l => S_ITEMIZED.includes(l.id))}
+                    {scenario} compact={true} showHelp={true}
+                    marginalCalloutRate={result?.deductionType === 'itemized' ? result.marginalRate : null}
+                    descriptions={{ state_local_tax: 'State income + property taxes (capped $10K)', mortgage_interest: 'Mortgage interest on debt up to $750K', charitable_contributions: 'Cash donations to 501(c)(3) orgs' }}
+                  />
+                </div>
+
+                <!-- FAMILY & AGE -->
+                <div class="sec" style="--c:#f59e0b">
+                  <div class="sec-hdr">
+                    <span class="sec-title">Family &amp; Age</span>
+                  </div>
+                  <Controls
+                    levers={rules.levers.filter(l => S_FAMILY.includes(l.id))}
+                    {scenario} compact={true} showHelp={true}
+descriptions={{ num_children: 'Children under 17 → $2K credit each', age: '50+ → IRA catch-up; 65+ → senior bonus' }}
+                  />
+                </div>
+
+                <!-- ADVANCED -->
+                <div class="sec" style="--c:#64748b">
+                  <div class="sec-hdr">
+                    <span class="sec-title">Advanced</span>
+                    <span class="sec-tag">AMT</span>
+                  </div>
+                  <Controls
+                    levers={rules.levers.filter(l => S_ADVANCED.includes(l.id))}
+                    {scenario} compact={true} showHelp={true}
+                  />
+                </div>
+
+                <!-- FILING & STATE -->
+                <div class="sec" style="--c:#64748b">
+                  <div class="sec-hdr">
+                    <span class="sec-title">Filing &amp; State</span>
+                  </div>
+                  <Controls
+                    levers={rules.levers.filter(l => S_SETTINGS.includes(l.id))}
+                    {scenario} compact={true} showHelp={true}
+                    descriptions={{ filing_status: 'Determines brackets & deduction sizes', state: 'Adds state income tax to your total', federal_withheld: 'W-2 Box 2 — shows refund or owed', state_withheld: 'W-2 Box 17 — shows state refund or owed' }}
+                  />
+                  {#if rules.states[String(scenario.state ?? 'none')]?.sub_jurisdictions}
+                    <div class="inline-lever">
+                      <label class="lever-label" for="sub-j-drawer">Sub-Jurisdiction</label>
+                      <select id="sub-j-drawer"
+                        value={String(scenario.sub_jurisdiction ?? 'none')}
+                        on:change={(e) => updateLever('sub_jurisdiction', e.currentTarget.value)}
+                      >
+                        <option value="none">None</option>
+                        {#each Object.keys(rules.states[String(scenario.state ?? 'none')]?.sub_jurisdictions ?? {}) as key}
+                          <option value={key}>{key}</option>
+                        {/each}
+                      </select>
+                    </div>
+                  {/if}
+                </div>
+              </div>
+            </div>
+          </div>
+        {/if}
       </div>
     {/if}
   {/if}
@@ -448,31 +646,64 @@
   .s-green { color: #2E7D32; }
   .s-muted { color: #9E9E9E; }
 
-  /* ── Tab bar (mobile) ───────────────────────────────────────────────────── */
-  .tab-bar {
-    display: flex;
-    flex-shrink: 0;
+  /* ── Mobile bottom drawer (inputs) ──────────────────────────────────────── */
+  .drawer-backdrop {
+    display: none;
+  }
+  .drawer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
     background: #fff;
-    border-bottom: 1px solid #E5E7EB;
-    z-index: 8;
+    border-top: 1px solid #D8D8D8;
+    box-shadow: 0 -6px 20px rgba(0,0,0,0.12);
   }
-  .tab-btn {
-    flex: 1;
-    padding: 10px 14px;
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    color: #757575;
+  .drawer-handle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 0 9px;
     cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
   }
-  .tab-btn.active {
-    color: #1565C0;
-    border-bottom-color: #1565C0;
+  .drawer-pill {
+    width: 44px;
+    height: 4px;
+    border-radius: 2px;
+    background: #d1d5db;
+    transition: background 0.2s;
   }
+  .drawer-handle:hover .drawer-pill { background: #94a3b8; }
+  .drawer-hint {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+  }
+  .drawer-body {
+    overflow: hidden;
+    transition: height 0.25s ease;
+  }
+  .drawer-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    background: #fff;
+  }
+  .drawer-scroll .sec {
+    border-left-width: 3px;
+    border-left-style: solid;
+    border-left-color: var(--c, #64748b);
+    border-bottom: 1px solid #f0f0f0;
+    padding: 10px 14px;
+  }
+  .drawer-scroll .sec:last-child { border-bottom: none; }
 
   /* ── Content area ───────────────────────────────────────────────────────── */
   .content {
@@ -542,6 +773,24 @@
     margin: 8px 0 4px; padding: 0;
     border-bottom: 1px solid #f1f5f9;
     padding-bottom: 3px;
+  }
+
+  /* Bundling indicator — sits between "Itemized" sub-hdr and the sliders */
+  .bundle-status {
+    font-size: 10px;
+    line-height: 1.4;
+    padding: 5px 8px;
+    margin: 0 0 6px;
+    border-radius: 5px;
+    background: #f1f5f9;
+    color: #64748b;
+    border-left: 2px solid #cbd5e1;
+  }
+  .bundle-status.bundle-win {
+    background: #ecfdf5;
+    color: #166534;
+    border-left-color: #16a34a;
+    font-weight: 500;
   }
 
   .inline-lever { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
@@ -616,24 +865,69 @@
     /* Hide tier-2 stats on tiny screens to keep card compact */
     .stat-secondary { display: none; }
 
-    .panel-charts { padding: 8px 10px; gap: 8px; }
+    /* Only the charts panel shows in the content flow on mobile */
+    .content { flex-direction: column; }
+    .content .panel-controls { display: none; }
+    .panel-charts {
+      padding: 8px 10px 56px;  /* bottom pad clears the collapsed drawer handle */
+      gap: 8px;
+    }
     .chart-card { padding: 10px 12px; border-radius: 8px; }
-    .sankey-card { min-height: 280px; }
+    .sankey-card { min-height: 300px; }
 
     .sec { padding: 10px 12px; }
+
+    /* Drawer: collapsed shows only the handle */
+    .drawer-backdrop {
+      display: block;
+      position: fixed;
+      inset: 0 0 56px 0;
+      z-index: 49;
+      background: rgba(15, 23, 42, 0.25);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .drawer-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .drawer-body { height: 0; }
+    .drawer.expanded .drawer-body { height: 58vh; }
+    .drawer-scroll { height: 100%; }
+    .drawer-scroll .lever-label { font-size: 12px; }
+    .drawer-scroll .lever-header { flex-wrap: wrap; }
+    .drawer-scroll .help-text { padding-right: 0; }
+    .drawer-scroll .direct-input,
+    .drawer-scroll .controls.compact .direct-input { width: 72px; }
   }
 
-  /* ── Responsive: medium (tablet-ish, still mobile layout) ───────────────── */
+  /* ── Responsive: medium (tablet-ish, mobile layout) ─────────────────────── */
   @media (min-width: 600px) and (max-width: 899px) {
     .stats-grid {
       grid-template-columns: repeat(6, 1fr);
     }
+    .content { flex-direction: column; }
+    .content .panel-controls { display: none; }
+    .panel-charts { padding: 12px 16px 60px; }
+    .drawer-backdrop {
+      display: block;
+      position: fixed;
+      inset: 0 0 60px 0;
+      z-index: 49;
+      background: rgba(15, 23, 42, 0.25);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+    .drawer-body { height: 0; }
+    .drawer.expanded .drawer-body { height: 62vh; }
+    .drawer-scroll { height: 100%; }
   }
 
   /* ── Responsive: desktop (≥900px) — two-column layout ───────────────────── */
   @media (min-width: 900px) {
-    .tab-bar { display: none; }
-
     .content {
       flex-direction: row;
     }
@@ -653,6 +947,10 @@
     /* Show both panels regardless of which tab is "active" */
     .hidden-mobile { display: flex; }
     .panel-controls.hidden-mobile { display: flex; flex-direction: column; }
+
+    /* No drawer on desktop */
+    .drawer-backdrop { display: none; }
+    .drawer { display: none; }
 
     .stats-grid {
       grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));

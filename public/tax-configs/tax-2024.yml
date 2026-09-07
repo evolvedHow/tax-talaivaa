@@ -355,11 +355,13 @@ levers:
       - none
       - NY
       - GA
+      - IL
     help: >
       Adds state income tax to your total liability. New York uses progressive
-      brackets (4%–8.82%); Georgia uses a flat 5.49% rate for 2024. Select
-      "none" for states with no income tax (FL, TX, WA, etc.). NYC residents
-      should also enable the NYC toggle below for the city surcharge.
+      brackets (4%–8.82%); Georgia uses a flat 5.49% rate for 2024; Illinois
+      uses a flat 4.95% rate. Select "none" for states with no income tax (FL,
+      TX, WA, etc.). NYC residents should also enable the NYC toggle below for
+      the city surcharge.
 
   - id: iso_options_exercised
     label: Exercised ISO Stock Options (AMT trigger)
@@ -474,3 +476,7 @@ states:
   GA:
     note: "Georgia 2024 flat income tax rate — source: GA Dept of Revenue" # approximation — last verified 2024-11
     flat_rate: 0.0549
+
+  IL:
+    note: "Illinois 2024 flat income tax rate — source: IL Income Tax Act (35 ILCS 5/201)"
+    flat_rate: 0.0495

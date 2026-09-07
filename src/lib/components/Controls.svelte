@@ -7,6 +7,12 @@
   export let levers: Lever[];
   export let scenario: ScenarioInputs;
   export let compact: boolean = false;
+  // When set, slider levers show a "saves ~$0.XX per $1" hint at the given rate.
+  export let marginalCalloutRate: number | null = null;
+  // When true, inline help text (lever.help or a short description) is shown under the control.
+  export let showHelp: boolean = false;
+  // Short one-line descriptions keyed by lever id — shown when showHelp is true.
+  export let descriptions: Record<string, string> = {};
 
   function handleChange(lever: Lever, raw: string | boolean) {
     if (lever.type === 'toggle') {
@@ -77,6 +83,9 @@
           <span>${(lever.min ?? 0).toLocaleString()}</span>
           <span>${(lever.max ?? 0).toLocaleString()}</span>
         </div>
+        {#if marginalCalloutRate != null && marginalCalloutRate > 0}
+          <div class="marginal-hint">→ saves ~${marginalCalloutRate.toFixed(2)} per $1 at your marginal rate</div>
+        {/if}
 
       {:else if lever.type === 'integer'}
         <input
@@ -112,6 +121,13 @@
             <option value={opt}>{opt.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
           {/each}
         </select>
+      {/if}
+
+      {#if showHelp}
+        {@const desc = descriptions[lever.id] ?? lever.help}
+        {#if desc}
+          <p class="help-text">{desc}</p>
+        {/if}
       {/if}
     </div>
   {/each}
@@ -183,6 +199,22 @@
     justify-content: space-between;
     font-size: 10px;
     color: #bbb;
+    padding-right: 78px;
+  }
+  .marginal-hint {
+    color: #2E7D32;
+    font-weight: 600;
+    font-size: 10px;
+    line-height: 1.3;
+    padding-right: 78px;
+  }
+
+  /* Inline help text shown below a control (when showHelp) */
+  .help-text {
+    font-size: 10px;
+    line-height: 1.35;
+    color: #9ca3af;
+    margin: 1px 0 0;
     padding-right: 78px;
   }
 
