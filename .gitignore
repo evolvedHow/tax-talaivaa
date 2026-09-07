@@ -8,3 +8,12 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Node / Vite
+node_modules/
+*.local
+
+# Agent / editor config
+.claude/
+.vscode/
+.idea/
