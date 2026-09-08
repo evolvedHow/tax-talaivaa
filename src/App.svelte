@@ -17,13 +17,14 @@
   const SEC_HELP: Record<string, string> = {
     income: 'All sources of income that go on your tax return. Wages and bonuses are taxed at ordinary rates (10–37%). Long-term capital gains and qualified dividends get lower rates (0/15/20%). Each slider is separate so you can model different income mix scenarios.',
     retirement: 'Pre-tax retirement contributions reduce your adjusted gross income (AGI) dollar-for-dollar. The IRA deduction may be limited if you or your spouse are covered by a workplace plan.',
-    itemized: 'These only help if their total exceeds your standard deduction ($15,000 single / $30,000 MFJ for 2025). SALT is capped at $10,000. The app automatically compares itemized vs. standard and uses whichever is better.',
+    itemized: 'These only help if their total exceeds your standard deduction (which varies by year and filing status). The SALT deduction is capped ($10,000–$40,400 depending on tax year). The app automatically compares itemized vs. standard and uses whichever is better.',
     family: 'Personal details that drive credits and special deductions. Each qualifying child under 17 earns a $2,000 Child Tax Credit. Age determines catch-up IRA contributions (50+) and senior standard deduction bonus (65+).',
     advanced: 'Most people can ignore these. They trigger Alternative Minimum Tax (AMT) calculations — only relevant if you\'ve exercised stock options or have specific tax preference items.',
     settings: 'Filing status determines your bracket thresholds and deduction sizes. State selection adds state income tax. Withholdings let the app calculate your refund or amount owed.',
   };
 
   const CONFIGS = [
+    { id: 'tax-2026', label: '2026' },
     { id: 'tax-2025', label: '2025' },
     { id: 'tax-2024', label: '2024' },
   ];
@@ -299,7 +300,7 @@
                 levers={rules.levers.filter(l => S_ITEMIZED.includes(l.id))}
                 {scenario} compact={true} showHelp={true}
                 marginalCalloutRate={result?.deductionType === 'itemized' ? result.marginalRate : null}
-                descriptions={{ state_local_tax: 'State income + property taxes (capped $10K)', mortgage_interest: 'Mortgage interest on debt up to $750K', charitable_contributions: 'Cash donations to 501(c)(3) orgs' }}
+                descriptions={{ state_local_tax: 'State income + property taxes (SALT, capped)', mortgage_interest: 'Mortgage interest on debt up to $750K', charitable_contributions: 'Cash donations to 501(c)(3) orgs' }}
               />
             </div>
 
@@ -462,7 +463,7 @@
                     levers={rules.levers.filter(l => S_ITEMIZED.includes(l.id))}
                     {scenario} compact={true} showHelp={true}
                     marginalCalloutRate={result?.deductionType === 'itemized' ? result.marginalRate : null}
-                    descriptions={{ state_local_tax: 'State income + property taxes (capped $10K)', mortgage_interest: 'Mortgage interest on debt up to $750K', charitable_contributions: 'Cash donations to 501(c)(3) orgs' }}
+                    descriptions={{ state_local_tax: 'State income + property taxes (SALT, capped)', mortgage_interest: 'Mortgage interest on debt up to $750K', charitable_contributions: 'Cash donations to 501(c)(3) orgs' }}
                   />
                 </div>
 

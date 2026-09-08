@@ -1,76 +1,89 @@
 meta:
-  tax_year: 2025
-  label: "2025 Federal + NY + GA Tax Rules"
-  description: "Federal income tax rules for 2025 (IRS Rev. Proc. 2024-40) plus New York and Georgia state rules"
-  last_updated: "2025-01-01"
+  tax_year: 2026
+  label: "2026 Federal + NY/GA/IL/CA/NJ/TX/FL Tax Rules"
+  description: "Federal income tax rules for 2026 (IRS Rev. Proc. 2025-32 + OBBBA) plus New York, Georgia, Illinois, California, New Jersey, Texas, and Florida state rules"
+  last_updated: "2026-09-08"
 
 federal:
   standard_deduction:
-    single: 15000
-    married_filing_jointly: 30000
-    head_of_household: 22500
-    married_filing_separately: 15000
+    single: 16100
+    married_filing_jointly: 32200
+    head_of_household: 24150
+    married_filing_separately: 16100
 
   senior_bonus:
+    # OBBBA §70103: $6,000 age-65+ "senior bonus" per qualifying person
+    # (2025–2028) STACKS on the permanent age-65/blind add-on. The interpreter
+    # models a single bonus, so amounts combine both layers:
+    #   single/HoH: 2050 (age add-on) + 6000 (OBBBA) = 8050
+    #   MFJ:        1650 (per spouse) + 6000 (OBBBA) = 7650
+    # The 6% phase-out is applied to the combined amount; for the combined
+    # figure it is exactly equivalent to phasing only the OBBBA portion until
+    # the bonus is fully exhausted (MAGI 175K single / 250K MFJ).
     single:
-      amount: 2000
-      phase_out_threshold: 9999999
-      phase_out_rate: 0
+      amount: 8050
+      phase_out_threshold: 75000
+      phase_out_rate: 0.06
     married_filing_jointly:
-      amount: 1600
-      phase_out_threshold: 9999999
-      phase_out_rate: 0
+      amount: 7650
+      phase_out_threshold: 150000
+      phase_out_rate: 0.06
     head_of_household:
-      amount: 2000
-      phase_out_threshold: 9999999
-      phase_out_rate: 0
+      amount: 8050
+      phase_out_threshold: 75000
+      phase_out_rate: 0.06
     married_filing_separately:
-      amount: 1600
+      # OBBBA senior bonus requires a joint return (MFS gets $0); the
+      # permanent age-65 add-on of $1,650 still applies with no phase-out.
+      amount: 1650
       phase_out_threshold: 9999999
       phase_out_rate: 0
 
-  brackets:
+  brackets: # IRS Rev. Proc. 2025-32
     single:
-      - { floor: 0,       ceiling: 11925,  rate: 0.10 }
-      - { floor: 11925,   ceiling: 48475,  rate: 0.12 }
-      - { floor: 48475,   ceiling: 103350, rate: 0.22 }
-      - { floor: 103350,  ceiling: 197300, rate: 0.24 }
-      - { floor: 197300,  ceiling: 250525, rate: 0.32 }
-      - { floor: 250525,  ceiling: 626350, rate: 0.35 }
-      - { floor: 626350,  ceiling: null,   rate: 0.37 }
+      - { floor: 0,       ceiling: 12400,  rate: 0.10 }
+      - { floor: 12400,   ceiling: 50400,  rate: 0.12 }
+      - { floor: 50400,   ceiling: 105700, rate: 0.22 }
+      - { floor: 105700,  ceiling: 201775, rate: 0.24 }
+      - { floor: 201775,  ceiling: 256225, rate: 0.32 }
+      - { floor: 256225,  ceiling: 640600, rate: 0.35 }
+      - { floor: 640600,  ceiling: null,   rate: 0.37 }
     married_filing_jointly:
-      - { floor: 0,       ceiling: 23850,  rate: 0.10 }
-      - { floor: 23850,   ceiling: 96950,  rate: 0.12 }
-      - { floor: 96950,   ceiling: 206700, rate: 0.22 }
-      - { floor: 206700,  ceiling: 394600, rate: 0.24 }
-      - { floor: 394600,  ceiling: 501050, rate: 0.32 }
-      - { floor: 501050,  ceiling: 751600, rate: 0.35 }
-      - { floor: 751600,  ceiling: null,   rate: 0.37 }
+      - { floor: 0,       ceiling: 24800,  rate: 0.10 }
+      - { floor: 24800,   ceiling: 100800, rate: 0.12 }
+      - { floor: 100800,  ceiling: 211400, rate: 0.22 }
+      - { floor: 211400,  ceiling: 403550, rate: 0.24 }
+      - { floor: 403550,  ceiling: 512450, rate: 0.32 }
+      - { floor: 512450,  ceiling: 768700, rate: 0.35 }
+      - { floor: 768700,  ceiling: null,   rate: 0.37 }
     head_of_household:
-      - { floor: 0,       ceiling: 17000,  rate: 0.10 }
-      - { floor: 17000,   ceiling: 64850,  rate: 0.12 }
-      - { floor: 64850,   ceiling: 103350, rate: 0.22 }
-      - { floor: 103350,  ceiling: 197300, rate: 0.24 }
-      - { floor: 197300,  ceiling: 250500, rate: 0.32 }
-      - { floor: 250500,  ceiling: 626350, rate: 0.35 }
-      - { floor: 626350,  ceiling: null,   rate: 0.37 }
+      - { floor: 0,       ceiling: 17700,  rate: 0.10 }
+      - { floor: 17700,   ceiling: 67450,  rate: 0.12 }
+      - { floor: 67450,   ceiling: 105700, rate: 0.22 }
+      - { floor: 105700,  ceiling: 201750, rate: 0.24 }
+      - { floor: 201750,  ceiling: 256200, rate: 0.32 }
+      - { floor: 256200,  ceiling: 640600, rate: 0.35 }
+      - { floor: 640600,  ceiling: null,   rate: 0.37 }
     married_filing_separately:
-      - { floor: 0,       ceiling: 11925,  rate: 0.10 }
-      - { floor: 11925,   ceiling: 48475,  rate: 0.12 }
-      - { floor: 48475,   ceiling: 103350, rate: 0.22 }
-      - { floor: 103350,  ceiling: 197300, rate: 0.24 }
-      - { floor: 197300,  ceiling: 250525, rate: 0.32 }
-      - { floor: 250525,  ceiling: 375800, rate: 0.35 }
-      - { floor: 375800,  ceiling: null,   rate: 0.37 }
+      - { floor: 0,       ceiling: 12400,  rate: 0.10 }
+      - { floor: 12400,   ceiling: 50400,  rate: 0.12 }
+      - { floor: 50400,   ceiling: 105700, rate: 0.22 }
+      - { floor: 105700,  ceiling: 201775, rate: 0.24 }
+      - { floor: 201775,  ceiling: 256225, rate: 0.32 }
+      - { floor: 256225,  ceiling: 384350, rate: 0.35 }
+      - { floor: 384350,  ceiling: null,   rate: 0.37 }
 
   itemized_deductions:
     salt:
-      cap:
-        single: 10000
-        married_filing_jointly: 10000
-        head_of_household: 10000
-        married_filing_separately: 5000
+      cap: # OBBBA: $40,400 through 2029 (phases down above ~$500K AGI to $10K floor)
+        single: 40400
+        married_filing_jointly: 40400
+        head_of_household: 40400
+        married_filing_separately: 20200
       phase_out:
+        # OBBBA phases the CAP itself down above $500K/$505K AGI; the
+        # interpreter phases the deduction amount instead, so a flat cap with
+        # no phase-out is the faithful modeling choice here.
         single:
           threshold: 9999999
           rate: 0
@@ -84,47 +97,47 @@ federal:
           threshold: 9999999
           rate: 0
     mortgage_interest:
-      cap: 750000
+      cap: 750000 # OBBBA cap extended through 2029
     charity:
-      cap_pct_agi: 0.60
+      cap_pct_agi: 0.60 # 60% of AGI for cash donations
 
-  ira:
-    limit: 7000
-    limit_50_plus: 8000
+  ira: # IRS Notice 2025-67 (IR-2025-111)
+    limit: 7500
+    limit_50_plus: 8600 # $7,500 + $1,100 catch-up
     phase_out:
       single:
-        floor: 79000
-        ceiling: 89000
+        floor: 81000
+        ceiling: 91000
       married_filing_jointly:
-        floor: 126000
-        ceiling: 146000
+        floor: 129000
+        ceiling: 149000
       head_of_household:
-        floor: 79000
-        ceiling: 89000
+        floor: 81000
+        ceiling: 91000
       married_filing_separately:
         floor: 0
         ceiling: 10000
 
-  capital_gains:
+  capital_gains: # IRS Rev. Proc. 2025-32
     single:
-      - { floor: 0,      ceiling: 48350,  rate: 0.00 }
-      - { floor: 48350,  ceiling: 533400, rate: 0.15 }
-      - { floor: 533400, ceiling: null,   rate: 0.20 }
+      - { floor: 0,      ceiling: 49450,  rate: 0.00 }
+      - { floor: 49450,  ceiling: 545500, rate: 0.15 }
+      - { floor: 545500, ceiling: null,   rate: 0.20 }
     married_filing_jointly:
-      - { floor: 0,      ceiling: 96700,  rate: 0.00 }
-      - { floor: 96700,  ceiling: 600050, rate: 0.15 }
-      - { floor: 600050, ceiling: null,   rate: 0.20 }
+      - { floor: 0,      ceiling: 98900,  rate: 0.00 }
+      - { floor: 98900,  ceiling: 613700, rate: 0.15 }
+      - { floor: 613700, ceiling: null,   rate: 0.20 }
     head_of_household:
-      - { floor: 0,      ceiling: 64750,  rate: 0.00 }
-      - { floor: 64750,  ceiling: 566700, rate: 0.15 }
-      - { floor: 566700, ceiling: null,   rate: 0.20 }
+      - { floor: 0,      ceiling: 66200,  rate: 0.00 }
+      - { floor: 66200,  ceiling: 579600, rate: 0.15 }
+      - { floor: 579600, ceiling: null,   rate: 0.20 }
     married_filing_separately:
-      - { floor: 0,      ceiling: 48350,  rate: 0.00 }
-      - { floor: 48350,  ceiling: 300000, rate: 0.15 }
-      - { floor: 300000, ceiling: null,   rate: 0.20 }
+      - { floor: 0,      ceiling: 49450,  rate: 0.00 }
+      - { floor: 49450,  ceiling: 306850, rate: 0.15 }
+      - { floor: 306850, ceiling: null,   rate: 0.20 }
 
   credits:
-    child_tax_credit:
+    child_tax_credit: # OBBBA retains $2,000/child under 17 through 2029
       amount_per_child: 2000
       phase_out:
         single:
@@ -269,13 +282,13 @@ levers:
     label: IRA Contribution
     type: slider
     min: 0
-    max: 8000
+    max: 8600
     step: 500
     default: 0
     help: >
       Traditional IRA contributions reduce taxable income dollar-for-dollar
-      (subject to phase-out if covered by a workplace plan). 2025 limit:
-      $7,000 ($8,000 if age 50+).
+      (subject to phase-out if covered by a workplace plan). 2026 limit:
+      $7,500 ($8,600 if age 50+).
 
   - id: has_workplace_plan
     label: Covered by Workplace Retirement Plan
@@ -295,9 +308,10 @@ levers:
     step: 1
     default: 40
     help: >
-      Used to calculate IRA catch-up contribution eligibility ($1,000 extra
+      Used to calculate IRA catch-up contribution eligibility ($1,100 extra
       allowed at age 50+). If 65 or older, the senior standard deduction bonus
-      is applied automatically.
+      ($6,000 OBBBA + age add-on, phased out above $75K MAGI single / $150K
+      MFJ) is applied automatically.
 
   - id: num_children
     label: Qualifying Children (Child Tax Credit)
@@ -314,13 +328,14 @@ levers:
     label: State & Local Taxes Paid (SALT)
     type: slider
     min: 0
-    max: 50000
+    max: 60000
     step: 500
     default: 8000
     help: >
       State income taxes or property taxes you paid during the year. Deductible
-      only when itemizing, and capped at $10,000 ($5,000 if MFS) under the
-      TCJA SALT cap. High-tax-state residents often hit this cap quickly.
+      only when itemizing, and capped at $40,400 ($20,200 if MFS) for 2026
+      under the OBBBA SALT extension. High-tax-state residents often hit this
+      cap quickly.
 
   - id: mortgage_interest
     label: Mortgage Interest Paid
@@ -330,8 +345,8 @@ levers:
     step: 500
     default: 0
     help: >
-      Interest on mortgage acquisition debt up to $750,000 (loans originated
-      after Dec 15, 2017). Deductible only when itemizing.
+      Interest on mortgage acquisition debt up to $750,000 (OBBBA extends the
+      cap through 2029). Deductible only when itemizing.
 
   - id: charitable_contributions
     label: Charitable Contributions
@@ -359,10 +374,10 @@ levers:
       - FL
     help: >
       Adds state income tax to your total liability. New York uses progressive
-      brackets (4%–8.82%); California uses progressive brackets (1%–13.3%);
-      New Jersey uses progressive brackets (1.4%–10.75%); Georgia uses a flat
-      5.39% rate for 2025; Illinois uses a flat 4.95% rate; Texas and Florida
-      have no state income tax. Select "none" for states not modeled.
+      brackets (3.9%–10.9% for 2026); California uses progressive brackets
+      (1%–13.3%); New Jersey uses progressive brackets (1.4%–10.75%); Georgia
+      uses a flat 4.99% rate for 2026; Illinois uses a flat 4.95% rate; Texas
+      and Florida have no state income tax. Select "none" for states not modeled.
 
   - id: iso_options_exercised
     label: Exercised ISO Stock Options (AMT trigger)
@@ -379,7 +394,7 @@ levers:
     default: false
     help: >
       Certain deductions and income items are added back under AMT rules.
-      The AMT exemption for 2025 is $88,100 (single) / $137,000 (MFJ).
+      The AMT exemption for 2026 is $90,100 (single) / $140,200 (MFJ).
 
   - id: federal_withheld
     label: Federal Tax Already Withheld (W-2 Box 2)
@@ -406,38 +421,48 @@ levers:
 
 states:
   NY:
-    note: "New York State 2025 tax brackets — source: NY Tax Law §601"
+    note: "New York State 2026 tax brackets — Form IT-2105-I (2026); mid-class tax cut lowers the first five brackets by 0.1pt starting 2026"
     brackets:
       single:
-        - { floor: 0,       ceiling: 17150,  rate: 0.04   }
-        - { floor: 17150,   ceiling: 23600,  rate: 0.045  }
-        - { floor: 23600,   ceiling: 27900,  rate: 0.0525 }
-        - { floor: 27900,   ceiling: 161550, rate: 0.0585 }
-        - { floor: 161550,  ceiling: 323200, rate: 0.0625 }
-        - { floor: 323200,  ceiling: 2155350,rate: 0.0685 }
-        - { floor: 2155350, ceiling: null,   rate: 0.0882 }
+        - { floor: 0,        ceiling: 8500,     rate: 0.039  }
+        - { floor: 8500,     ceiling: 11700,    rate: 0.044  }
+        - { floor: 11700,    ceiling: 13900,    rate: 0.0515 }
+        - { floor: 13900,    ceiling: 80650,    rate: 0.054  }
+        - { floor: 80650,    ceiling: 215400,   rate: 0.059  }
+        - { floor: 215400,   ceiling: 1077550,  rate: 0.0685 }
+        - { floor: 1077550,  ceiling: 5000000,  rate: 0.0965 }
+        - { floor: 5000000,  ceiling: 25000000, rate: 0.103  }
+        - { floor: 25000000, ceiling: null,     rate: 0.109  }
       married_filing_jointly:
-        - { floor: 0,       ceiling: 27900,  rate: 0.04   }
-        - { floor: 27900,   ceiling: 43000,  rate: 0.045  }
-        - { floor: 43000,   ceiling: 161550, rate: 0.0525 }
-        - { floor: 161550,  ceiling: 323200, rate: 0.0585 }
-        - { floor: 323200,  ceiling: 2155350,rate: 0.0625 }
-        - { floor: 2155350, ceiling: null,   rate: 0.0882 }
+        - { floor: 0,        ceiling: 17150,    rate: 0.039  }
+        - { floor: 17150,    ceiling: 23600,    rate: 0.044  }
+        - { floor: 23600,    ceiling: 27900,    rate: 0.0515 }
+        - { floor: 27900,    ceiling: 161550,   rate: 0.054  }
+        - { floor: 161550,   ceiling: 323200,   rate: 0.059  }
+        - { floor: 323200,   ceiling: 2155350,  rate: 0.0685 }
+        - { floor: 2155350,  ceiling: 5000000,  rate: 0.0965 }
+        - { floor: 5000000,  ceiling: 25000000, rate: 0.103  }
+        - { floor: 25000000, ceiling: null,     rate: 0.109  }
       head_of_household:
-        - { floor: 0,       ceiling: 27900,  rate: 0.04   }
-        - { floor: 27900,   ceiling: 43000,  rate: 0.045  }
-        - { floor: 43000,   ceiling: 161550, rate: 0.0525 }
-        - { floor: 161550,  ceiling: 323200, rate: 0.0585 }
-        - { floor: 323200,  ceiling: 2155350,rate: 0.0625 }
-        - { floor: 2155350, ceiling: null,   rate: 0.0882 }
+        - { floor: 0,        ceiling: 12800,    rate: 0.039  }
+        - { floor: 12800,    ceiling: 17650,    rate: 0.044  }
+        - { floor: 17650,    ceiling: 20900,    rate: 0.0515 }
+        - { floor: 20900,    ceiling: 107650,   rate: 0.054  }
+        - { floor: 107650,   ceiling: 269300,   rate: 0.059  }
+        - { floor: 269300,   ceiling: 1616450,  rate: 0.0685 }
+        - { floor: 1616450,  ceiling: 5000000,  rate: 0.0965 }
+        - { floor: 5000000,  ceiling: 25000000, rate: 0.103  }
+        - { floor: 25000000, ceiling: null,     rate: 0.109  }
       married_filing_separately:
-        - { floor: 0,       ceiling: 17150,  rate: 0.04   }
-        - { floor: 17150,   ceiling: 23600,  rate: 0.045  }
-        - { floor: 23600,   ceiling: 27900,  rate: 0.0525 }
-        - { floor: 27900,   ceiling: 161550, rate: 0.0585 }
-        - { floor: 161550,  ceiling: 323200, rate: 0.0625 }
-        - { floor: 323200,  ceiling: 1077675,rate: 0.0685 }
-        - { floor: 1077675, ceiling: null,   rate: 0.0882 }
+        - { floor: 0,        ceiling: 12800,    rate: 0.039  }
+        - { floor: 12800,    ceiling: 17650,    rate: 0.044  }
+        - { floor: 17650,    ceiling: 20900,    rate: 0.0515 }
+        - { floor: 20900,    ceiling: 107650,   rate: 0.054  }
+        - { floor: 107650,   ceiling: 269300,   rate: 0.059  }
+        - { floor: 269300,   ceiling: 1616450,  rate: 0.0685 }
+        - { floor: 1616450,  ceiling: 5000000,  rate: 0.0965 }
+        - { floor: 5000000,  ceiling: 25000000, rate: 0.103  }
+        - { floor: 25000000, ceiling: null,     rate: 0.109  }
     sub_jurisdictions:
       NYC:
         trigger_lever: nyc_resident
@@ -464,15 +489,15 @@ states:
             - { floor: 50000,  ceiling: null,  rate: 0.03876 }
 
   GA:
-    note: "Georgia 2025 flat income tax rate — source: GA Dept of Revenue"
-    flat_rate: 0.0539
+    note: "Georgia 2026 flat income tax rate — HB 463 (signed May 2026) accelerates the cut to 4.99% retroactive to 1 Jan 2026"
+    flat_rate: 0.0499
 
   IL:
-    note: "Illinois 2025 flat income tax rate — source: IL Income Tax Act (35 ILCS 5/201)"
+    note: "Illinois 2026 flat income tax rate — IL Income Tax Act (35 ILCS 5/201)"
     flat_rate: 0.0495
 
   CA:
-    note: "California 2025 tax brackets — FTB indexing; top 13.3% includes the 1% mental health surtax above $1M single / $1,485,906 MFJ"
+    note: "California 2026 tax brackets — 2026 bracket indexing holds rates flat vs 2025; top 13.3% includes the 1% mental health surtax above $1M single / $1,485,906 MFJ"
     brackets:
       single:
         - { floor: 0,       ceiling: 11079,  rate: 0.01   }
@@ -520,7 +545,7 @@ states:
         - { floor: 1000000, ceiling: null,   rate: 0.133  }
 
   NJ:
-    note: "New Jersey 2025 gross income tax — fixed statutory brackets (not inflation-indexed), same as 2024; Table A single/MFS/HOH, Table B MFJ"
+    note: "New Jersey 2026 gross income tax — fixed statutory brackets (not inflation-indexed), same for 2024–2026; Table A single/MFS/HOH, Table B MFJ"
     brackets:
       single:
         - { floor: 0,       ceiling: 20000,   rate: 0.014   }

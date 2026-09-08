@@ -356,12 +356,17 @@ levers:
       - NY
       - GA
       - IL
+      - CA
+      - NJ
+      - TX
+      - FL
     help: >
       Adds state income tax to your total liability. New York uses progressive
-      brackets (4%–8.82%); Georgia uses a flat 5.49% rate for 2024; Illinois
-      uses a flat 4.95% rate. Select "none" for states with no income tax (FL,
-      TX, WA, etc.). NYC residents should also enable the NYC toggle below for
-      the city surcharge.
+      brackets (4%–8.82%); California uses progressive brackets (1%–13.3%);
+      New Jersey uses progressive brackets (1.4%–10.75%); Georgia uses a flat
+      5.49% rate for 2024; Illinois uses a flat 4.95% rate; Texas and Florida
+      have no state income tax. Select "none" for states not modeled. NYC
+      residents should also enable the NYC toggle below for the city surcharge.
 
   - id: iso_options_exercised
     label: Exercised ISO Stock Options (AMT trigger)
@@ -480,3 +485,96 @@ states:
   IL:
     note: "Illinois 2024 flat income tax rate — source: IL Income Tax Act (35 ILCS 5/201)"
     flat_rate: 0.0495
+
+  CA:
+    note: "California 2024 tax brackets — FTB indexing; top 13.3% includes the 1% mental health surtax above $1M single / $1,396,542 MFJ"
+    brackets:
+      single:
+        - { floor: 0,       ceiling: 10412,  rate: 0.01   }
+        - { floor: 10412,   ceiling: 24684,  rate: 0.02   }
+        - { floor: 24684,   ceiling: 38959,  rate: 0.04   }
+        - { floor: 38959,   ceiling: 54081,  rate: 0.06   }
+        - { floor: 54081,   ceiling: 68350,  rate: 0.08   }
+        - { floor: 68350,   ceiling: 349137, rate: 0.093  }
+        - { floor: 349137,  ceiling: 418961, rate: 0.103  }
+        - { floor: 418961,  ceiling: 698271, rate: 0.113  }
+        - { floor: 698271,  ceiling: 1000000,rate: 0.123  }
+        - { floor: 1000000, ceiling: null,   rate: 0.133  }
+      married_filing_jointly:
+        - { floor: 0,       ceiling: 20824,  rate: 0.01   }
+        - { floor: 20824,   ceiling: 49368,  rate: 0.02   }
+        - { floor: 49368,   ceiling: 77918,  rate: 0.04   }
+        - { floor: 77918,   ceiling: 108162, rate: 0.06   }
+        - { floor: 108162,  ceiling: 136700, rate: 0.08   }
+        - { floor: 136700,  ceiling: 698274, rate: 0.093  }
+        - { floor: 698274,  ceiling: 837922, rate: 0.103  }
+        - { floor: 837922,  ceiling: 1396542,rate: 0.113  }
+        - { floor: 1396542, ceiling: 1396542,rate: 0.123  }
+        - { floor: 1396542, ceiling: null,   rate: 0.133  }
+      head_of_household:
+        - { floor: 0,       ceiling: 10412,  rate: 0.01   }
+        - { floor: 10412,   ceiling: 24684,  rate: 0.02   }
+        - { floor: 24684,   ceiling: 38959,  rate: 0.04   }
+        - { floor: 38959,   ceiling: 54081,  rate: 0.06   }
+        - { floor: 54081,   ceiling: 68350,  rate: 0.08   }
+        - { floor: 68350,   ceiling: 349137, rate: 0.093  }
+        - { floor: 349137,  ceiling: 418961, rate: 0.103  }
+        - { floor: 418961,  ceiling: 698271, rate: 0.113  }
+        - { floor: 698271,  ceiling: 1000000,rate: 0.123  }
+        - { floor: 1000000, ceiling: null,   rate: 0.133  }
+      married_filing_separately:
+        - { floor: 0,       ceiling: 10412,  rate: 0.01   }
+        - { floor: 10412,   ceiling: 24684,  rate: 0.02   }
+        - { floor: 24684,   ceiling: 38959,  rate: 0.04   }
+        - { floor: 38959,   ceiling: 54081,  rate: 0.06   }
+        - { floor: 54081,   ceiling: 68350,  rate: 0.08   }
+        - { floor: 68350,   ceiling: 349137, rate: 0.093  }
+        - { floor: 349137,  ceiling: 418961, rate: 0.103  }
+        - { floor: 418961,  ceiling: 698271, rate: 0.113  }
+        - { floor: 698271,  ceiling: 1000000,rate: 0.123  }
+        - { floor: 1000000, ceiling: null,   rate: 0.133  }
+
+  NJ:
+    note: "New Jersey 2024 gross income tax — fixed statutory brackets (not inflation-indexed); Table A single/MFS/HOH, Table B MFJ"
+    brackets:
+      single:
+        - { floor: 0,       ceiling: 20000,   rate: 0.014   }
+        - { floor: 20000,   ceiling: 35000,   rate: 0.0175  }
+        - { floor: 35000,   ceiling: 40000,   rate: 0.035   }
+        - { floor: 40000,   ceiling: 75000,   rate: 0.05525 }
+        - { floor: 75000,   ceiling: 500000,  rate: 0.0637  }
+        - { floor: 500000,  ceiling: 1000000, rate: 0.0897  }
+        - { floor: 1000000, ceiling: null,    rate: 0.1075  }
+      married_filing_jointly:
+        - { floor: 0,       ceiling: 20000,   rate: 0.014   }
+        - { floor: 20000,   ceiling: 50000,   rate: 0.0175  }
+        - { floor: 50000,   ceiling: 70000,   rate: 0.0245  }
+        - { floor: 70000,   ceiling: 80000,   rate: 0.035   }
+        - { floor: 80000,   ceiling: 150000,  rate: 0.05525 }
+        - { floor: 150000,  ceiling: 500000,  rate: 0.0637  }
+        - { floor: 500000,  ceiling: 1000000, rate: 0.0897  }
+        - { floor: 1000000, ceiling: null,    rate: 0.1075  }
+      head_of_household:
+        - { floor: 0,       ceiling: 20000,   rate: 0.014   }
+        - { floor: 20000,   ceiling: 35000,   rate: 0.0175  }
+        - { floor: 35000,   ceiling: 40000,   rate: 0.035   }
+        - { floor: 40000,   ceiling: 75000,   rate: 0.05525 }
+        - { floor: 75000,   ceiling: 500000,  rate: 0.0637  }
+        - { floor: 500000,  ceiling: 1000000, rate: 0.0897  }
+        - { floor: 1000000, ceiling: null,    rate: 0.1075  }
+      married_filing_separately:
+        - { floor: 0,       ceiling: 20000,   rate: 0.014   }
+        - { floor: 20000,   ceiling: 35000,   rate: 0.0175  }
+        - { floor: 35000,   ceiling: 40000,   rate: 0.035   }
+        - { floor: 40000,   ceiling: 75000,   rate: 0.05525 }
+        - { floor: 75000,   ceiling: 500000,  rate: 0.0637  }
+        - { floor: 500000,  ceiling: 1000000, rate: 0.0897  }
+        - { floor: 1000000, ceiling: null,    rate: 0.1075  }
+
+  TX:
+    note: "Texas — no state individual income tax"
+    flat_rate: 0
+
+  FL:
+    note: "Florida — no state individual income tax"
+    flat_rate: 0
